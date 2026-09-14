@@ -63,6 +63,33 @@
       </div>
     </div>
 
+    <!-- Meine aktuelle Bestellung Card (Erscheint nur wenn Bestellung in Firebase vorliegt) -->
+    <div id="userOrderCard" class="hidden mb-3 bg-white border-2 border-blue-600 rounded-2xl p-4 shadow-sm">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center space-x-1.5 text-blue-900">
+          <i data-lucide="package-check" class="w-4 h-4 text-emerald-600"></i>
+          <span class="text-xs font-black uppercase tracking-wider">Deine aktuelle Bestellung</span>
+        </div>
+        <span id="userOrderStatusBadge" class="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Gebucht</span>
+      </div>
+
+      <div id="userOrderItemsList" class="py-2.5 space-y-1.5 text-xs">
+        <!-- Dynamisch befüllt -->
+      </div>
+
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] text-slate-400 font-semibold">Gesamtsumme</span>
+          <p id="userOrderTotal" class="text-base font-black text-blue-950">0,00 €</p>
+        </div>
+        <button id="btnCancelOrEditOrder" onclick="cancelAndEditOrder()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1 transition active:scale-95">
+          <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+          <span>Bestellung bearbeiten</span>
+        </button>
+      </div>
+      <p id="orderLockNotice" class="hidden text-[10px] text-amber-700 font-medium mt-1 text-right">Bestellfenster geschlossen (Keine Änderung mehr möglich)</p>
+    </div>
+
     <!-- Kategorien Tabs -->
     <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-2 pt-1" id="categoryBar">
       <!-- Dynamisch per JS -->
@@ -367,7 +394,9 @@
       getDocs, 
       deleteDoc, 
       doc, 
-      serverTimestamp 
+      serverTimestamp,
+      query,
+      where
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
     // Deine echten Firebase-Keys
@@ -393,6 +422,8 @@
     window.deleteDoc = deleteDoc;
     window.doc = doc;
     window.serverTimestamp = serverTimestamp;
+    window.query = query;
+    window.where = where;
 
     // Signal für Initialisierung
     window.dispatchEvent(new CustomEvent("firebase-ready"));
@@ -464,6 +495,7 @@
       renderDishes();
       updateCartUI();
       checkAdminStatus();
+      checkAndLoadUserOrder();
       lucide.createIcons();
     });
 
@@ -472,6 +504,7 @@
       if (isAdminUnlocked) {
         refreshLiveOrders();
       }
+      checkAndLoadUserOrder();
     });
 
     // --- NUTZER-VERWALTUNG (GETRENNT NACH VOR- & NACHNAME) ---
@@ -515,6 +548,7 @@
       document.getElementById("userModal").classList.add("hidden");
       updateUserDisplay();
       checkAdminStatus();
+      checkAndLoadUserOrder();
     }
 
     function updateUserDisplay() {
@@ -811,6 +845,121 @@
       lucide.createIcons();
     }
 
+
+    // --- USER ORDER TRACKING & EDITING ---
+    let myCurrentOrderDoc = null;
+
+    function isOrderWindowOpen() {
+      const now = new Date();
+      const day = now.getDay(); // 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const timeVal = hours + minutes / 60;
+
+      // Mo ab 06:00 bis Do 12:00
+      if (day === 1 && timeVal >= 6) return true;
+      if (day === 2 || day === 3) return true;
+      if (day === 4 && timeVal < 12) return true;
+      return false;
+    }
+
+    async function checkAndLoadUserOrder() {
+      const currentUser = getFormattedUser();
+      const card = document.getElementById("userOrderCard");
+      if (!currentUser || !window.db || !window.getDocs || !window.query || !window.where) {
+        if (card) card.classList.add("hidden");
+        return;
+      }
+
+      try {
+        const q = window.query(
+          window.collection(window.db, window.ORDERS_COL),
+          window.where("besteller", "==", currentUser)
+        );
+        const snap = await window.getDocs(q);
+
+        if (snap.empty) {
+          myCurrentOrderDoc = null;
+          card.classList.add("hidden");
+          return;
+        }
+
+        // Neueste Bestellung nehmen
+        let docs = [];
+        snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+        myCurrentOrderDoc = docs[docs.length - 1];
+
+        // UI rendern
+        const list = document.getElementById("userOrderItemsList");
+        list.innerHTML = (myCurrentOrderDoc.artikel || []).map(a => `
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="font-extrabold text-slate-900">${a.menge}x ${a.speise}</span>
+              <p class="text-[11px] text-slate-500">${a.details || "Standard"}</p>
+            </div>
+            <span class="font-black text-slate-800">${formatEuro(a.gesamt || 0)}</span>
+          </div>
+        `).join("");
+
+        document.getElementById("userOrderTotal").textContent = formatEuro(myCurrentOrderDoc.gesamtpreis || 0);
+
+        // Prüfen ob Bestellfenster offen ist
+        const isOpen = isOrderWindowOpen();
+        const editBtn = document.getElementById("btnCancelOrEditOrder");
+        const lockNotice = document.getElementById("orderLockNotice");
+
+        if (!isOpen) {
+          editBtn.classList.add("hidden");
+          lockNotice.classList.remove("hidden");
+        } else {
+          editBtn.classList.remove("hidden");
+          lockNotice.classList.add("hidden");
+        }
+
+        card.classList.remove("hidden");
+        lucide.createIcons();
+      } catch (err) {
+        console.error("Fehler beim Laden der eigenen Bestellung:", err);
+      }
+    }
+
+    async function cancelAndEditOrder() {
+      if (!myCurrentOrderDoc) return;
+      if (!isOrderWindowOpen()) {
+        alert("Das Bestellfenster für diese Woche ist bereits geschlossen. Änderungen sind nicht mehr möglich.");
+        return;
+      }
+
+      const ok = confirm("Möchtest du diese Bestellung zur Bearbeitung in den Warenkorb zurückholen? Die vorherige Buchung wird dabei storniert.");
+      if (!ok) return;
+
+      try {
+        // Positionen in den Warenkorb laden
+        cart = (myCurrentOrderDoc.artikel || []).map(a => ({
+          id: Date.now() + Math.random(),
+          dishName: a.speise,
+          details: a.details,
+          quantity: a.menge,
+          singlePrice: a.einzelpreis,
+          totalPrice: a.gesamt
+        }));
+
+        // Aus Firestore löschen
+        if (window.db && window.deleteDoc && window.doc) {
+          await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, myCurrentOrderDoc.id));
+        }
+
+        myCurrentOrderDoc = null;
+        updateCartUI();
+        document.getElementById("userOrderCard").classList.add("hidden");
+        toggleCartModal(true);
+        alert("Bestellung wieder in den Warenkorb geladen! Du kannst jetzt Anpassungen vornehmen und erneut buchen.");
+      } catch (err) {
+        console.error("Fehler beim Stornieren:", err);
+        alert("Konnte Bestellung nicht stornieren: " + err.message);
+      }
+    }
+
     // --- CHECKOUT & FIREBASE SPEICHERUNG ---
     async function submitOrder() {
       if (cart.length === 0) {
@@ -892,6 +1041,7 @@
       updateCartUI();
       document.getElementById("paymentModal").classList.add("hidden");
       alert("Fertig! Wir sehen uns am Freitag beim Fischbrötchen! 🐟");
+      checkAndLoadUserOrder();
     }
 
     // --- ADMIN MODAL & AUSWERTUNG ---
@@ -1117,6 +1267,8 @@ Vielen Dank!`;
     window.submitOrder = submitOrder;
     window.copyText = copyText;
     window.finishOrderAndReload = finishOrderAndReload;
+    window.cancelAndEditOrder = cancelAndEditOrder;
+    window.checkAndLoadUserOrder = checkAndLoadUserOrder;
   </script>
 </body>
 </html>
