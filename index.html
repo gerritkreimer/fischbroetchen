@@ -404,6 +404,11 @@
     const WERO_PHONE = "015222586689";
     const ADMIN_PIN = "1928"; // Frei wählbarer PIN für Admin-Modus
 
+    function isMiesmuschelSeason() {
+      const month = new Date().getMonth(); // 0 = Jan ... 3 = Apr, 8 = Sep ... 11 = Dez
+      return month >= 8 || month <= 3;
+    }
+
     // --- STAMMDATEN MATRIX ---
     const DISHES = [
       { id: 1, category: "Fischbrötchen", name: "Matjesbrötchen", price: 3.50, available: true, options1Title: "Zwiebeln", options1: [{ name: "mit Zwiebeln", price: 0 }, { name: "ohne Zwiebeln", price: 0 }], options2Title: "", options2: [] },
@@ -427,7 +432,7 @@
       { id: 19, category: "Fischvariationen", name: "Heringsstipp Dill mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
       { id: 22, category: "Fischvariationen", name: "Fischpommes (Portion)", price: 4.00, available: true, options1Title: "Sauce", options1: [{ name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }, { name: "Natur (ohne Sauce)", price: 0 }], options2Title: "", options2: [] },
       { id: 20, category: "Muscheln", name: "Frische Austern im 12er Gebinde", price: 18.00, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
-      { id: 21, category: "Muscheln", name: "Miesmuscheln (1kg)", price: 6.50, available: false, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 21, category: "Muscheln", name: "Miesmuscheln (1kg)", price: 6.50, isSeasonMiesmuschel: true, available: isMiesmuschelSeason(), options1Title: "", options1: [], options2Title: "", options2: [] },
       { id: 23, category: "Beilagen", name: "Brötchen", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
       { id: 24, category: "Beilagen", name: "Schale Honig-Senf-Sauce", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
       { id: 25, category: "Beilagen", name: "Schale Knoblauchsauce", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
@@ -585,7 +590,7 @@
               <div class="flex-1 pr-3">
                 <div class="flex items-center space-x-2">
                   <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-300 px-2 py-0.5 rounded-md">${dish.category}</span>
-                  <span class="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">Saisonartikel / Nicht verfügbar</span>
+                  <span class="text-[10px] font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">${dish.isSeasonMiesmuschel ? "Saisonartikel (nur Sept. – April)" : "Nicht verfügbar"}</span>
                 </div>
                 <h3 class="font-extrabold text-slate-600 text-base mt-1 leading-snug line-through">${dish.name}</h3>
               </div>
