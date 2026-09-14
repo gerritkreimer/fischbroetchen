@@ -87,6 +87,36 @@
     </div>
   </div>
 
+  <!-- MODAL: Nutzer Vor- und Nachname erfassen -->
+  <div id="userModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-left">
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 bg-blue-100 text-blue-900 rounded-2xl flex items-center justify-center font-bold">
+          <i data-lucide="user-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-black text-slate-900 leading-tight">Wer bestellt?</h3>
+          <p class="text-xs text-slate-500">Für die Freitags-Bestellliste</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Vorname</label>
+          <input type="text" id="inputFirstName" placeholder="z. B. Gerrit" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nachname</label>
+          <input type="text" id="inputLastName" placeholder="z. B. Kreimer" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition">
+        </div>
+      </div>
+
+      <button onclick="saveUserNames()" class="mt-5 w-full bg-blue-900 hover:bg-blue-800 active:scale-95 text-white font-bold py-3 rounded-xl shadow-md transition text-sm flex items-center justify-center space-x-2">
+        <span>Speichern & Fortfahren</span>
+      </button>
+    </div>
+  </div>
+
   <!-- MODAL: Speise Konfigurator (Optionen & Menge) -->
   <div id="itemConfigModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center transition-opacity">
     <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-200">
@@ -163,7 +193,7 @@
       <div class="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center justify-between text-xs">
         <div>
           <span class="text-slate-500">Bestellung für:</span>
-          <p id="cartUserName" class="font-black text-blue-900 text-sm">Gerrit Kreimer</p>
+          <p id="cartUserName" class="font-black text-blue-900 text-sm">Kreimer, Gerrit</p>
         </div>
         <button onclick="editUserPrompt()" class="text-blue-700 font-bold underline">Ändern</button>
       </div>
@@ -631,7 +661,8 @@
     ];
 
     // --- APP STATE ---
-    let currentUser = localStorage.getItem("fisch_user") || "";
+    let userFirstName = localStorage.getItem("fisch_vorname") || "";
+    let userLastName = localStorage.getItem("fisch_nachname") || "";
     let activeCategory = "Alle";
     let cart = [];
 
@@ -650,9 +681,16 @@
       lucide.createIcons();
     });
 
-    // --- NUTZER-VERWALTUNG ---
+    // --- NUTZER-VERWALTUNG (GETRENNT NACH VOR- & NACHNAME) ---
+    function getFormattedUser() {
+      if (userLastName && userFirstName) {
+        return `${userLastName}, ${userFirstName}`;
+      }
+      return "";
+    }
+
     function initUser() {
-      if (!currentUser) {
+      if (!userLastName || !userFirstName) {
         editUserPrompt();
       } else {
         updateUserDisplay();
@@ -660,17 +698,35 @@
     }
 
     function editUserPrompt() {
-      const name = prompt("Bitte gib deinen Namen ein (z. B. Mustermann, Max):", currentUser || "");
-      if (name && name.trim().length > 0) {
-        currentUser = name.trim();
-        localStorage.setItem("fisch_user", currentUser);
-        updateUserDisplay();
+      document.getElementById("inputFirstName").value = userFirstName;
+      document.getElementById("inputLastName").value = userLastName;
+      document.getElementById("userModal").classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    function saveUserNames() {
+      const vName = document.getElementById("inputFirstName").value.trim();
+      const nName = document.getElementById("inputLastName").value.trim();
+
+      if (!vName || !nName) {
+        alert("Bitte gib sowohl Vor- als auch Nachnamen ein.");
+        return;
       }
+
+      userFirstName = vName.charAt(0).toUpperCase() + vName.slice(1);
+      userLastName = nName.charAt(0).toUpperCase() + nName.slice(1);
+
+      localStorage.setItem("fisch_vorname", userFirstName);
+      localStorage.setItem("fisch_nachname", userLastName);
+
+      document.getElementById("userModal").classList.add("hidden");
+      updateUserDisplay();
     }
 
     function updateUserDisplay() {
-      document.getElementById("headerUserName").textContent = currentUser || "Anmelden";
-      document.getElementById("cartUserName").textContent = currentUser || "Unbekannt";
+      const fullName = getFormattedUser();
+      document.getElementById("headerUserName").textContent = fullName || "Anmelden";
+      document.getElementById("cartUserName").textContent = fullName || "Unbekannt";
     }
 
     // --- KATEGORIEN & SPEISEN RENDERN ---
@@ -758,7 +814,7 @@
       document.getElementById("modalDishBasePrice").textContent = formatEuro(currentDish.price);
       document.getElementById("modalQuantity").textContent = selectedQuantity;
 
-      // Opt1 Rendern falls vorhanden
+      // Opt1 Rendern
       const opt1Container = document.getElementById("opt1Container");
       if (currentDish.options1 && currentDish.options1.length > 0) {
         opt1Container.classList.remove("hidden");
@@ -777,7 +833,7 @@
         opt1Container.classList.add("hidden");
       }
 
-      // Opt2 Rendern falls vorhanden
+      // Opt2 Rendern
       const opt2Container = document.getElementById("opt2Container");
       if (currentDish.options2 && currentDish.options2.length > 0) {
         opt2Container.classList.remove("hidden");
@@ -890,7 +946,7 @@
     function toggleCartModal(show) {
       const modal = document.getElementById("cartModal");
       if (show) {
-        if (!currentUser) editUserPrompt();
+        if (!getFormattedUser()) editUserPrompt();
         renderCartList();
         modal.classList.remove("hidden");
       } else {
@@ -938,9 +994,11 @@
         alert("Bitte lege zuerst ein Brötchen in den Warenkorb.");
         return;
       }
+      
+      const currentUser = getFormattedUser();
       if (!currentUser) {
         editUserPrompt();
-        if (!currentUser) return;
+        return;
       }
 
       const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
