@@ -40,7 +40,7 @@
         </div>
       </div>
       <div class="flex items-center space-x-1.5">
-        <button id="adminHeaderBtn" onclick="openAdminModal()" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-full text-xs font-black shadow transition flex items-center space-x-1">
+        <button id="adminHeaderBtn" onclick="openAdminModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-full text-xs font-black shadow transition flex items-center space-x-1">
           <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
           <span>Admin</span>
         </button>
@@ -220,7 +220,7 @@
       <div class="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center justify-between text-xs">
         <div>
           <span class="text-slate-500">Bestellung für:</span>
-          <p id="cartUserName" class="font-black text-blue-900 text-sm">Kreimer, Gerrit</p>
+          <p id="cartUserName" class="font-black text-blue-900 text-sm">Fischer, Fritze</p>
         </div>
         <button onclick="editUserPrompt()" class="text-blue-700 font-bold underline">Ändern</button>
       </div>
@@ -454,7 +454,7 @@
     // --- KONFIGURATION ZAHLUNGEN ---
     const PAYPAL_ME_NAME = "langergk";
     const WERO_PHONE = "015222586689";
-    const ADMIN_PIN = "1928"; // Frei wählbarer PIN für Admin-Modus
+    const ADMIN_PIN = "9600";
 
     function isMiesmuschelSeason() {
       const month = new Date().getMonth(); // 0 = Jan ... 3 = Apr, 8 = Sep ... 11 = Dez
@@ -498,7 +498,7 @@
     let cart = [];
 
     // Admin State
-    let isAdminUnlocked = localStorage.getItem("fisch_is_admin") === "true";
+    let isAdminUnlocked = false; localStorage.removeItem("fisch_is_admin");
     let adminClickCount = 0;
     let liveOrders = [];
     let currentAdminTab = "agg";
@@ -580,35 +580,16 @@
       document.getElementById("cartUserName").textContent = fullName || "Unbekannt";
     }
 
-    // --- ADMIN FREISCHALTUNG (Gerrit Kreimer oder Fisch-Icon 5x antippen) ---
+    // --- ADMIN STEUERUNG (REIN ÜBER PIN 9600) ---
     function checkAdminStatus() {
-      const name = getFormattedUser().toLowerCase();
-      if (name.includes("kreimer") && name.includes("gerrit")) {
-        unlockAdmin();
-      } else if (isAdminUnlocked) {
-        unlockAdmin();
+      // Keine automatische Freischaltung über Benutzernamen mehr!
+      if (sessionStorage.getItem("fisch_admin_authenticated") === "true") {
+        document.getElementById("adminBadge").classList.remove("hidden");
       }
     }
 
     function handleAdminTrigger() {
-      adminClickCount++;
-      if (adminClickCount >= 5) {
-        adminClickCount = 0;
-        const pin = prompt("Admin-PIN eingeben:");
-        if (pin === ADMIN_PIN) {
-          unlockAdmin();
-          openAdminModal();
-        } else if (pin) {
-          alert("Falscher PIN.");
-        }
-      }
-    }
-
-    function unlockAdmin() {
-      isAdminUnlocked = true;
-      localStorage.setItem("fisch_is_admin", "true");
-      document.getElementById("adminBadge").classList.remove("hidden");
-      document.getElementById("adminHeaderBtn").classList.remove("hidden");
+      openAdminModal();
     }
 
     // --- KATEGORIEN & SPEISEN RENDERN ---
@@ -1148,8 +1129,19 @@
       checkAndLoadUserOrder();
     }
 
-    // --- ADMIN MODAL & AUSWERTUNG ---
+    // --- ADMIN MODAL & AUSWERTUNG (PIN-GESCHÜTZT) ---
     async function openAdminModal() {
+      // Immer PIN 9600 abfragen, unabhängig vom eingetragenen Namen
+      if (!sessionStorage.getItem("fisch_admin_authenticated")) {
+        const enteredPin = prompt("Admin-PIN eingeben:");
+        if (enteredPin !== ADMIN_PIN) {
+          if (enteredPin !== null) alert("Falscher PIN! Zugriff verweigert.");
+          return;
+        }
+        sessionStorage.setItem("fisch_admin_authenticated", "true");
+      }
+
+      document.getElementById("adminBadge").classList.remove("hidden");
       document.getElementById("adminModal").classList.remove("hidden");
       lucide.createIcons();
       await refreshLiveOrders();
