@@ -244,6 +244,7 @@
   <!-- JAVASCRIPT APP LOGIC -->
   <script>
     // --- KONFIGURATION ZAHLUNGEN ---
+    const PAYPAL_ME_NAME = "langergk";
     const PAYPAL_EMAIL = "gerrit.kreimer@gmail.com";
     const WERO_PHONE = "015222586689";
     const WERO_PHONE_DISPLAY = "0152-22586689";
@@ -961,8 +962,8 @@
       document.getElementById("paymentModalSubtitle").textContent = `Bestellung für ${currentUser} erfolgreich abgeschickt!`;
       document.getElementById("paymentModalAmount").textContent = formatEuro(total);
       
-      const paypalSendUrl = `https://www.paypal.com/myaccount/transfer/homepage/buy/preview?recipient=${encodeURIComponent(PAYPAL_EMAIL)}&amount=${totalFormatted}&currencyCode=EUR`;
-      document.getElementById("payPalDeepLink").href = paypalSendUrl;
+      const paypalMeUrl = `https://paypal.me/${PAYPAL_ME_NAME}/${totalFormatted}EUR`;
+      document.getElementById("payPalDeepLink").href = paypalMeUrl;
 
       paymentModal.classList.remove("hidden");
       lucide.createIcons();
