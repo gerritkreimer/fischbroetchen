@@ -29,17 +29,26 @@
   <!-- Header -->
   <header class="bg-gradient-to-r from-blue-900 to-indigo-900 text-white px-4 py-4 sticky top-0 z-30 shadow-md">
     <div class="max-w-md mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <span class="text-2xl">🐟</span>
+      <div class="flex items-center space-x-2 cursor-pointer" onclick="handleAdminTrigger()" title="Tippen für Admin-Bereich">
+        <span class="text-2xl select-none active:scale-125 transition-transform">🐟</span>
         <div>
           <h1 class="text-lg font-black tracking-tight leading-tight">Fridays for Fischbrötchen</h1>
-          <p class="text-xs text-blue-200">Freitags-Bestellung</p>
+          <p class="text-xs text-blue-200 flex items-center space-x-1">
+            <span>Freitags-Bestellung</span>
+            <span id="adminBadge" class="hidden bg-amber-400 text-slate-900 text-[10px] font-black px-1.5 py-0.2 rounded font-mono">ADMIN</span>
+          </p>
         </div>
       </div>
-      <button onclick="editUserPrompt()" class="bg-blue-800/80 hover:bg-blue-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1 border border-blue-600 transition">
-        <i data-lucide="user" class="w-3.5 h-3.5"></i>
-        <span id="headerUserName">Anmelden</span>
-      </button>
+      <div class="flex items-center space-x-1.5">
+        <button id="adminHeaderBtn" onclick="openAdminModal()" class="hidden bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-full text-xs font-black shadow transition flex items-center space-x-1">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          <span>Admin</span>
+        </button>
+        <button onclick="editUserPrompt()" class="bg-blue-800/80 hover:bg-blue-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center space-x-1 border border-blue-600 transition">
+          <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          <span id="headerUserName">Anmelden</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -56,12 +65,12 @@
 
     <!-- Kategorien Tabs -->
     <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-2 pt-1" id="categoryBar">
-      <!-- Wird per JS befüllt -->
+      <!-- Dynamisch per JS -->
     </div>
 
     <!-- Speisen Liste -->
     <div class="space-y-2.5 mt-2" id="dishesList">
-      <!-- Wird per JS dynamisch befüllt -->
+      <!-- Dynamisch per JS -->
     </div>
 
   </main>
@@ -117,11 +126,10 @@
     </div>
   </div>
 
-  <!-- MODAL: Speise Konfigurator (Optionen & Menge) -->
+  <!-- MODAL: Speise Konfigurator -->
   <div id="itemConfigModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center transition-opacity">
     <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] flex flex-col animate-in slide-in-from-bottom duration-200">
       
-      <!-- Modal Header -->
       <div class="flex justify-between items-start pb-3 border-b border-slate-100">
         <div>
           <span id="modalDishCategory" class="text-[11px] font-bold uppercase tracking-wider text-blue-600">Kategorie</span>
@@ -133,22 +141,17 @@
         </button>
       </div>
 
-      <!-- Scrollbarer Inhalt -->
       <div class="overflow-y-auto py-4 space-y-4 flex-1">
-        
-        <!-- Option 1 Gruppe -->
         <div id="opt1Container">
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2" id="opt1Title">Sauce / Zubereitung</label>
           <div class="grid grid-cols-2 gap-2" id="opt1Options"></div>
         </div>
 
-        <!-- Option 2 Gruppe -->
         <div id="opt2Container">
           <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2" id="opt2Title">Beilage / Extra</label>
           <div class="grid grid-cols-2 gap-2" id="opt2Options"></div>
         </div>
 
-        <!-- Mengen-Auswahl (+ -) -->
         <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
           <span class="text-sm font-bold text-slate-700">Anzahl</span>
           <div class="flex items-center space-x-3 bg-slate-100 p-1 rounded-xl border border-slate-200">
@@ -157,10 +160,8 @@
             <button type="button" onclick="adjustQuantity(1)" class="w-10 h-10 bg-white rounded-lg shadow-sm font-black text-xl text-slate-700 flex items-center justify-center hover:bg-slate-50 active:scale-95 transition">+</button>
           </div>
         </div>
-
       </div>
 
-      <!-- Modal Footer -->
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
         <div>
           <p class="text-xs text-slate-400 font-medium">Gesamt</p>
@@ -189,7 +190,6 @@
         </button>
       </div>
 
-      <!-- Besteller Info -->
       <div class="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3 flex items-center justify-between text-xs">
         <div>
           <span class="text-slate-500">Bestellung für:</span>
@@ -198,19 +198,15 @@
         <button onclick="editUserPrompt()" class="text-blue-700 font-bold underline">Ändern</button>
       </div>
 
-      <!-- Artikelliste im Warenkorb -->
-      <div id="cartItemsList" class="overflow-y-auto py-3 space-y-2 flex-1 divide-y divide-slate-100">
-        <!-- Dynamisch -->
-      </div>
+      <div id="cartItemsList" class="overflow-y-auto py-3 space-y-2 flex-1 divide-y divide-slate-100"></div>
 
-      <!-- Warenkorb Footer & Checkout -->
       <div class="pt-3 border-t border-slate-100 space-y-3">
         <div class="flex justify-between items-baseline">
           <span class="text-sm font-bold text-slate-600">Gesamtbetrag</span>
           <span id="cartModalTotal" class="text-2xl font-black text-blue-900">0,00 €</span>
         </div>
 
-        <button onclick="submitOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black py-3.5 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-base">
+        <button onclick="submitOrder()" id="btnSubmitOrder" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black py-3.5 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-base">
           <i data-lucide="check-circle" class="w-5 h-5"></i>
           <span>Verbindlich bestellen & zahlen</span>
         </button>
@@ -229,9 +225,8 @@
       </div>
       
       <h3 class="text-xl font-black text-slate-900">Bestellung gebucht!</h3>
-      <p class="text-xs text-slate-500 mt-1" id="paymentModalSubtitle">Vielen Dank für deine Bestellung.</p>
+      <p class="text-xs text-slate-500 mt-1" id="paymentModalSubtitle">In der Cloud gespeichert.</p>
 
-      <!-- Betrag Box -->
       <div class="my-4 bg-slate-50 border border-slate-200 rounded-2xl p-4 w-full">
         <p class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Zu zahlender Betrag</p>
         <p id="paymentModalAmount" class="text-3xl font-black text-blue-900 mt-1">0,00 €</p>
@@ -256,7 +251,6 @@
           <span>In PayPal öffnen & senden</span>
         </a>
 
-        <!-- Fallback Kopieren -->
         <div class="mt-2 flex items-center justify-between bg-black/20 rounded-lg px-2.5 py-1 text-[11px]">
           <span class="font-mono text-blue-100">paypal.me/<b>langergk</b></span>
           <button onclick="copyText('langergk', 'ppCopyLabel')" class="bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded font-bold flex items-center space-x-1 transition active:scale-95">
@@ -276,7 +270,7 @@
         <p class="text-[11px] text-emerald-100 leading-snug">
           In deiner Banking-App via <b>Wero</b> an Handynummer senden:
         </p>
-        <div class="mt-2 flex items-center justify-between bg-black/20 rounded-lg px-2.5 py-1.5">
+        <div class="mt-2 flex items-center justify-between bg-black/20 rounded-lg px-2.5 py-1">
           <span class="font-mono font-bold text-sm tracking-wider">0152-22586689</span>
           <button onclick="copyText('015222586689', 'copyBtnLabel')" class="bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded text-[11px] font-bold flex items-center space-x-1 transition active:scale-95">
             <i data-lucide="copy" class="w-3 h-3"></i>
@@ -291,373 +285,153 @@
     </div>
   </div>
 
-  <!-- JAVASCRIPT APP LOGIC -->
+  <!-- MODAL: ADMIN / AUSWERTUNG / WHATSAPP EXPORT -->
+  <div id="adminModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center transition-opacity">
+    <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[92vh] flex flex-col animate-in slide-in-from-bottom duration-200">
+      
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-black text-slate-900">Admin-Auswertung</h2>
+            <p class="text-[11px] text-slate-400">Live-Daten aus Firebase</p>
+          </div>
+        </div>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-slate-700 p-1 rounded-full bg-slate-100">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Kacheln: Kennzahlen -->
+      <div class="grid grid-cols-3 gap-2 my-3">
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-2.5 text-center">
+          <p class="text-[10px] uppercase font-bold text-blue-600">Bestellungen</p>
+          <p id="adminTotalOrders" class="text-lg font-black text-blue-950">0</p>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-2.5 text-center">
+          <p class="text-[10px] uppercase font-bold text-emerald-600">Teile gesamt</p>
+          <p id="adminTotalItems" class="text-lg font-black text-emerald-950">0</p>
+        </div>
+        <div class="bg-amber-50 border border-amber-100 rounded-xl p-2.5 text-center">
+          <p class="text-[10px] uppercase font-bold text-amber-600">Umsatz</p>
+          <p id="adminTotalRevenue" class="text-lg font-black text-amber-950">0,00 €</p>
+        </div>
+      </div>
+
+      <!-- WhatsApp Button -->
+      <div class="mb-3">
+        <button onclick="sendWhatsAppToVendor()" class="w-full bg-[#25D366] hover:bg-[#1ebd5a] active:scale-95 text-slate-950 font-black py-3 px-4 rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-sm">
+          <i data-lucide="message-circle" class="w-4 h-4"></i>
+          <span>Bestellung via WhatsApp an Fischmann senden</span>
+        </button>
+      </div>
+
+      <!-- Tabs: Aggregiert vs Besteller -->
+      <div class="flex space-x-2 border-b border-slate-200 pb-1 text-xs font-bold">
+        <button id="tabAggBtn" onclick="switchAdminTab('agg')" class="px-3 py-1.5 border-b-2 border-blue-900 text-blue-900">
+          Einkaufsliste Fischmann
+        </button>
+        <button id="tabUsersBtn" onclick="switchAdminTab('users')" class="px-3 py-1.5 border-b-2 border-transparent text-slate-500">
+          Besteller-Abrechnung
+        </button>
+      </div>
+
+      <!-- Tab Content: Scrollbar -->
+      <div class="overflow-y-auto py-3 flex-1 text-xs space-y-2" id="adminTabContent">
+        <!-- Dynamisch -->
+      </div>
+
+      <!-- Admin Footer Aktionen -->
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <button onclick="refreshLiveOrders()" class="text-blue-700 font-bold flex items-center space-x-1">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <span>Aktualisieren</span>
+        </button>
+        <button onclick="confirmResetAllOrders()" class="text-red-500 hover:text-red-700 font-semibold">
+          Liste leeren (Reset für nächste Woche)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FIREBASE SDK & APP LOGIK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+    import { 
+      getFirestore, 
+      collection, 
+      addDoc, 
+      getDocs, 
+      deleteDoc, 
+      doc, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+    // Deine echten Firebase-Keys
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcoYOQDqx9Coj5cbJfhbUMMPd-Qy0T06I",
+      authDomain: "fischbroetchen-65239.firebaseapp.com",
+      projectId: "fischbroetchen-65239",
+      storageBucket: "fischbroetchen-65239.firebasestorage.app",
+      messagingSenderId: "179788959848",
+      appId: "1:179788959848:web:8ac9f3d25eaaf6e3e82bdd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const ORDERS_COL = "bestellungen";
+
+    // Globale Referenzen für Modul -> Window
+    window.db = db;
+    window.ORDERS_COL = ORDERS_COL;
+    window.addDoc = addDoc;
+    window.collection = collection;
+    window.getDocs = getDocs;
+    window.deleteDoc = deleteDoc;
+    window.doc = doc;
+    window.serverTimestamp = serverTimestamp;
+
+    // Signal für Initialisierung
+    window.dispatchEvent(new CustomEvent("firebase-ready"));
+  </script>
+
   <script>
-    // --- KONFIGURATION ZAHLUNGEN & ENDPUNKT ---
-    const FORMSPREE_ENDPOINT = "https://formspree.io/f/mkjnlynj";
+    // --- KONFIGURATION ZAHLUNGEN ---
     const PAYPAL_ME_NAME = "langergk";
-    const PAYPAL_EMAIL = "gerrit.kreimer@gmail.com";
     const WERO_PHONE = "015222586689";
+    const ADMIN_PIN = "1928"; // Frei wählbarer PIN für Admin-Modus
 
     // --- STAMMDATEN MATRIX ---
     const DISHES = [
-      // FISCHBRÖTCHEN
-      {
-        id: 1,
-        category: "Fischbrötchen",
-        name: "Matjesbrötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "Zwiebeln",
-        options1: [{ name: "mit Zwiebeln", price: 0 }, { name: "ohne Zwiebeln", price: 0 }],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 2,
-        category: "Fischbrötchen",
-        name: "Bismarckheringsbrötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "Zwiebeln",
-        options1: [{ name: "mit Zwiebeln", price: 0 }, { name: "ohne Zwiebeln", price: 0 }],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 3,
-        category: "Fischbrötchen",
-        name: "Schnitzellachsbrötchen",
-        price: 4.00,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "Natur (ohne Sauce)", price: 0 },
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 }
-        ],
-        options2Title: "Salat / Zwiebeln",
-        options2: [
-          { name: "ohne Salat u. Zwiebeln", price: 0 },
-          { name: "mit Zwiebeln", price: 0 },
-          { name: "mit Salat", price: 0 }
-        ]
-      },
-      {
-        id: 4,
-        category: "Fischbrötchen",
-        name: "Räucherlachsbrötchen",
-        price: 5.00,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "Natur (ohne Sauce)", price: 0 },
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 }
-        ],
-        options2Title: "Salat / Zwiebeln",
-        options2: [
-          { name: "ohne Salat u. Zwiebeln", price: 0 },
-          { name: "mit Zwiebeln", price: 0 },
-          { name: "mit Salat", price: 0 }
-        ]
-      },
-      {
-        id: 5,
-        category: "Fischbrötchen",
-        name: "Nordseekrabbenbrötchen",
-        price: 6.50,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "Natur (ohne Sauce)", price: 0 },
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 }
-        ],
-        options2Title: "Salat / Zwiebeln",
-        options2: [
-          { name: "ohne Salat u. Zwiebeln", price: 0 },
-          { name: "mit Zwiebeln", price: 0 },
-          { name: "mit Salat", price: 0 }
-        ]
-      },
-      {
-        id: 6,
-        category: "Fischbrötchen",
-        name: "Bremerbrötchen",
-        price: 3.00,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "Natur (ohne Sauce)", price: 0 },
-          { name: "Ketchup", price: 0 },
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 }
-        ],
-        options2Title: "Zwiebeln",
-        options2: [
-          { name: "ohne Zwiebeln", price: 0 },
-          { name: "Zwiebeln", price: 0 },
-          { name: "Röstzwiebeln", price: 0 }
-        ]
-      },
-      {
-        id: 7,
-        category: "Fischbrötchen",
-        name: "Saftlachsbrötchen",
-        price: 5.00,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "Natur (ohne Sauce)", price: 0 },
-          { name: "Ketchup", price: 0 },
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 }
-        ],
-        options2Title: "Salat / Zwiebeln",
-        options2: [
-          { name: "ohne Salat u. Zwiebeln", price: 0 },
-          { name: "mit Zwiebeln", price: 0 },
-          { name: "mit Salat", price: 0 }
-        ]
-      },
-      {
-        id: 8,
-        category: "Fischbrötchen",
-        name: "Bratheringsbrötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "Zwiebeln",
-        options1: [{ name: "ohne Zwiebeln", price: 0 }, { name: "mit Zwiebeln", price: 0 }],
-        options2Title: "",
-        options2: []
-      },
-
-      // HEISS & FETTIG
-      {
-        id: 10,
-        category: "Heiß & Fettig",
-        name: "Backfisch m. Brötchen",
-        price: 6.00,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "ohne Sauce", price: 0 },
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 }
-        ],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 11,
-        category: "Heiß & Fettig",
-        name: "Kibbeling",
-        price: 6.00,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "ohne Sauce", price: 0 },
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 }
-        ],
-        options2Title: "",
-        options2: []
-      },
-
-      // FISCHVARIATIONEN
-      {
-        id: 9,
-        category: "Fischvariationen",
-        name: "Geräucherte Forellenfilets (eingeschweißt)",
-        price: 4.00,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 12,
-        category: "Fischvariationen",
-        name: "Flusskrebse in Cocktailsauce mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 13,
-        category: "Fischvariationen",
-        name: "Chili Garnelen mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 14,
-        category: "Fischvariationen",
-        name: "Aioli Garnelen mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 15,
-        category: "Fischvariationen",
-        name: "Heringssalat (Honig-Senf) mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 16,
-        category: "Fischvariationen",
-        name: "Heringssalat (Zitrone-Minze) mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 17,
-        category: "Fischvariationen",
-        name: "Heringssalat (klassisch) mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 18,
-        category: "Fischvariationen",
-        name: "Heringssalat (Rote Beete) mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 19,
-        category: "Fischvariationen",
-        name: "Heringsstipp Dill mit Brötchen",
-        price: 3.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 22,
-        category: "Fischvariationen",
-        name: "Fischpommes (Portion)",
-        price: 4.00,
-        available: true,
-        options1Title: "Sauce",
-        options1: [
-          { name: "Remo", price: 0 },
-          { name: "Knobi", price: 0 },
-          { name: "Honig-Senf", price: 0 },
-          { name: "Natur (ohne Sauce)", price: 0 }
-        ],
-        options2Title: "",
-        options2: []
-      },
-
-      // MUSCHELN
-      {
-        id: 20,
-        category: "Muscheln",
-        name: "Frische Austern im 12er Gebinde",
-        price: 18.00,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 21,
-        category: "Muscheln",
-        name: "Miesmuscheln (1kg)",
-        price: 6.50,
-        available: false, // Saisonartikel
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-
-      // BEILAGEN
-      {
-        id: 23,
-        category: "Beilagen",
-        name: "Brötchen",
-        price: 0.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 24,
-        category: "Beilagen",
-        name: "Schale Honig-Senf-Sauce",
-        price: 0.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 25,
-        category: "Beilagen",
-        name: "Schale Knoblauchsauce",
-        price: 0.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      },
-      {
-        id: 26,
-        category: "Beilagen",
-        name: "Schale Remoulade",
-        price: 0.50,
-        available: true,
-        options1Title: "",
-        options1: [],
-        options2Title: "",
-        options2: []
-      }
+      { id: 1, category: "Fischbrötchen", name: "Matjesbrötchen", price: 3.50, available: true, options1Title: "Zwiebeln", options1: [{ name: "mit Zwiebeln", price: 0 }, { name: "ohne Zwiebeln", price: 0 }], options2Title: "", options2: [] },
+      { id: 2, category: "Fischbrötchen", name: "Bismarckheringsbrötchen", price: 3.50, available: true, options1Title: "Zwiebeln", options1: [{ name: "mit Zwiebeln", price: 0 }, { name: "ohne Zwiebeln", price: 0 }], options2Title: "", options2: [] },
+      { id: 3, category: "Fischbrötchen", name: "Schnitzellachsbrötchen", price: 4.00, available: true, options1Title: "Sauce", options1: [{ name: "Natur (ohne Sauce)", price: 0 }, { name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }], options2Title: "Salat / Zwiebeln", options2: [{ name: "ohne Salat u. Zwiebeln", price: 0 }, { name: "mit Zwiebeln", price: 0 }, { name: "mit Salat", price: 0 }] },
+      { id: 4, category: "Fischbrötchen", name: "Räucherlachsbrötchen", price: 5.00, available: true, options1Title: "Sauce", options1: [{ name: "Natur (ohne Sauce)", price: 0 }, { name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }], options2Title: "Salat / Zwiebeln", options2: [{ name: "ohne Salat u. Zwiebeln", price: 0 }, { name: "mit Zwiebeln", price: 0 }, { name: "mit Salat", price: 0 }] },
+      { id: 5, category: "Fischbrötchen", name: "Nordseekrabbenbrötchen", price: 6.50, available: true, options1Title: "Sauce", options1: [{ name: "Natur (ohne Sauce)", price: 0 }, { name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }], options2Title: "Salat / Zwiebeln", options2: [{ name: "ohne Salat u. Zwiebeln", price: 0 }, { name: "mit Zwiebeln", price: 0 }, { name: "mit Salat", price: 0 }] },
+      { id: 6, category: "Fischbrötchen", name: "Bremerbrötchen", price: 3.00, available: true, options1Title: "Sauce", options1: [{ name: "Natur (ohne Sauce)", price: 0 }, { name: "Ketchup", price: 0 }, { name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }], options2Title: "Zwiebeln", options2: [{ name: "ohne Zwiebeln", price: 0 }, { name: "Zwiebeln", price: 0 }, { name: "Röstzwiebeln", price: 0 }] },
+      { id: 7, category: "Fischbrötchen", name: "Saftlachsbrötchen", price: 5.00, available: true, options1Title: "Sauce", options1: [{ name: "Natur (ohne Sauce)", price: 0 }, { name: "Ketchup", price: 0 }, { name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }], options2Title: "Salat / Zwiebeln", options2: [{ name: "ohne Salat u. Zwiebeln", price: 0 }, { name: "mit Zwiebeln", price: 0 }, { name: "mit Salat", price: 0 }] },
+      { id: 8, category: "Fischbrötchen", name: "Bratheringsbrötchen", price: 3.50, available: true, options1Title: "Zwiebeln", options1: [{ name: "ohne Zwiebeln", price: 0 }, { name: "mit Zwiebeln", price: 0 }], options2Title: "", options2: [] },
+      { id: 10, category: "Heiß & Fettig", name: "Backfisch m. Brötchen", price: 6.00, available: true, options1Title: "Sauce", options1: [{ name: "ohne Sauce", price: 0 }, { name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }], options2Title: "", options2: [] },
+      { id: 11, category: "Heiß & Fettig", name: "Kibbeling", price: 6.00, available: true, options1Title: "Sauce", options1: [{ name: "ohne Sauce", price: 0 }, { name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }], options2Title: "", options2: [] },
+      { id: 9, category: "Fischvariationen", name: "Geräucherte Forellenfilets (eingeschweißt)", price: 4.00, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 12, category: "Fischvariationen", name: "Flusskrebse in Cocktailsauce mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 13, category: "Fischvariationen", name: "Chili Garnelen mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 14, category: "Fischvariationen", name: "Aioli Garnelen mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 15, category: "Fischvariationen", name: "Heringssalat (Honig-Senf) mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 16, category: "Fischvariationen", name: "Heringssalat (Zitrone-Minze) mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 17, category: "Fischvariationen", name: "Heringssalat (klassisch) mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 18, category: "Fischvariationen", name: "Heringssalat (Rote Beete) mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 19, category: "Fischvariationen", name: "Heringsstipp Dill mit Brötchen", price: 3.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 22, category: "Fischvariationen", name: "Fischpommes (Portion)", price: 4.00, available: true, options1Title: "Sauce", options1: [{ name: "Remo", price: 0 }, { name: "Knobi", price: 0 }, { name: "Honig-Senf", price: 0 }, { name: "Natur (ohne Sauce)", price: 0 }], options2Title: "", options2: [] },
+      { id: 20, category: "Muscheln", name: "Frische Austern im 12er Gebinde", price: 18.00, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 21, category: "Muscheln", name: "Miesmuscheln (1kg)", price: 6.50, available: false, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 23, category: "Beilagen", name: "Brötchen", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 24, category: "Beilagen", name: "Schale Honig-Senf-Sauce", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 25, category: "Beilagen", name: "Schale Knoblauchsauce", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] },
+      { id: 26, category: "Beilagen", name: "Schale Remoulade", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] }
     ];
 
     // --- APP STATE ---
@@ -665,6 +439,12 @@
     let userLastName = localStorage.getItem("fisch_nachname") || "";
     let activeCategory = "Alle";
     let cart = [];
+
+    // Admin State
+    let isAdminUnlocked = localStorage.getItem("fisch_is_admin") === "true";
+    let adminClickCount = 0;
+    let liveOrders = [];
+    let currentAdminTab = "agg";
 
     // Konfigurator State
     let currentDish = null;
@@ -678,7 +458,15 @@
       renderCategories();
       renderDishes();
       updateCartUI();
+      checkAdminStatus();
       lucide.createIcons();
+    });
+
+    window.addEventListener("firebase-ready", () => {
+      console.log("Firebase Firestore verbunden!");
+      if (isAdminUnlocked) {
+        refreshLiveOrders();
+      }
     });
 
     // --- NUTZER-VERWALTUNG (GETRENNT NACH VOR- & NACHNAME) ---
@@ -721,12 +509,44 @@
 
       document.getElementById("userModal").classList.add("hidden");
       updateUserDisplay();
+      checkAdminStatus();
     }
 
     function updateUserDisplay() {
       const fullName = getFormattedUser();
       document.getElementById("headerUserName").textContent = fullName || "Anmelden";
       document.getElementById("cartUserName").textContent = fullName || "Unbekannt";
+    }
+
+    // --- ADMIN FREISCHALTUNG (Gerrit Kreimer oder Fisch-Icon 5x antippen) ---
+    function checkAdminStatus() {
+      const name = getFormattedUser().toLowerCase();
+      if (name.includes("kreimer") && name.includes("gerrit")) {
+        unlockAdmin();
+      } else if (isAdminUnlocked) {
+        unlockAdmin();
+      }
+    }
+
+    function handleAdminTrigger() {
+      adminClickCount++;
+      if (adminClickCount >= 5) {
+        adminClickCount = 0;
+        const pin = prompt("Admin-PIN eingeben:");
+        if (pin === ADMIN_PIN) {
+          unlockAdmin();
+          openAdminModal();
+        } else if (pin) {
+          alert("Falscher PIN.");
+        }
+      }
+    }
+
+    function unlockAdmin() {
+      isAdminUnlocked = true;
+      localStorage.setItem("fisch_is_admin", "true");
+      document.getElementById("adminBadge").classList.remove("hidden");
+      document.getElementById("adminHeaderBtn").classList.remove("hidden");
     }
 
     // --- KATEGORIEN & SPEISEN RENDERN ---
@@ -814,7 +634,6 @@
       document.getElementById("modalDishBasePrice").textContent = formatEuro(currentDish.price);
       document.getElementById("modalQuantity").textContent = selectedQuantity;
 
-      // Opt1 Rendern
       const opt1Container = document.getElementById("opt1Container");
       if (currentDish.options1 && currentDish.options1.length > 0) {
         opt1Container.classList.remove("hidden");
@@ -833,7 +652,6 @@
         opt1Container.classList.add("hidden");
       }
 
-      // Opt2 Rendern
       const opt2Container = document.getElementById("opt2Container");
       if (currentDish.options2 && currentDish.options2.length > 0) {
         opt2Container.classList.remove("hidden");
@@ -988,7 +806,7 @@
       lucide.createIcons();
     }
 
-    // --- CHECKOUT, FORMSPREE-VERSAND, PAYPAL & WERO ---
+    // --- CHECKOUT & FIREBASE SPEICHERUNG ---
     async function submitOrder() {
       if (cart.length === 0) {
         alert("Bitte lege zuerst ein Brötchen in den Warenkorb.");
@@ -1004,37 +822,45 @@
       const total = cart.reduce((sum, item) => sum + item.totalPrice, 0);
       const totalFormatted = total.toFixed(2);
 
-      // Datenzeilen maschinenlesbar für Outlook formatieren:
-      // Besteller;Speise;Details;Menge;Einzelpreis;Gesamtpreis
-      const rawOrderLines = cart.map(item => 
-        `${currentUser};${item.dishName};${item.details};${item.quantity};${item.singlePrice.toFixed(2)};${item.totalPrice.toFixed(2)}`
-      ).join("\n");
+      const submitBtn = document.getElementById("btnSubmitOrder");
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>Wird gespeichert...</span>`;
 
-      const emailBody = `Hallo Gerrit,\n\nneue Fischbrötchen-Bestellung über die Web-App!\n\n--- BESTELLUNG START ---\n[FISCH_ORDER]\n${rawOrderLines}\n--- BESTELLUNG ENDE ---\n\nGesamtbetrag: ${totalFormatted} €\nZahlung via PayPal / Wero angewiesen.`;
-
-      // Versand im Hintergrund an Formspree
+      // In Firebase Cloud Firestore eintragen
       try {
-        fetch(FORMSPREE_ENDPOINT, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json", 
-            "Accept": "application/json" 
-          },
-          body: JSON.stringify({
-            _subject: `Fisch-Bestellung: ${currentUser} (${totalFormatted} €)`,
-            name: currentUser,
-            bestellung: emailBody
-          })
-        });
+        if (window.db && window.addDoc) {
+          const orderDoc = {
+            besteller: currentUser,
+            gesamtpreis: total,
+            artikel: cart.map(i => ({
+              speise: i.dishName,
+              details: i.details,
+              menge: i.quantity,
+              einzelpreis: i.singlePrice,
+              gesamt: i.totalPrice
+            })),
+            erstelltAm: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString(),
+            status: "offen"
+          };
+          
+          await window.addDoc(window.collection(window.db, window.ORDERS_COL), orderDoc);
+          console.log("Erfolgreich in Firestore gespeichert!");
+        } else {
+          console.warn("Firestore noch nicht initialisiert, Offline-Modus.");
+        }
       } catch (err) {
-        console.error("Mail-Versand fehlgeschlagen:", err);
+        console.error("Fehler beim Firestore-Speichern:", err);
+        alert("Hinweis: Bestellung wurde lokal erfasst (Netzwerkfehler zur Cloud).");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i><span>Verbindlich bestellen & zahlen</span>`;
       }
 
       // Dialog wechseln zur Zahlungsseite
       toggleCartModal(false);
 
       const paymentModal = document.getElementById("paymentModal");
-      document.getElementById("paymentModalSubtitle").textContent = `Bestellung für ${currentUser} erfolgreich abgeschickt!`;
+      document.getElementById("paymentModalSubtitle").textContent = `Bestellung für ${currentUser} erfolgreich gebucht!`;
       document.getElementById("paymentModalAmount").textContent = formatEuro(total);
       
       // PayPal.Me Deep-Link
@@ -1063,9 +889,229 @@
       alert("Fertig! Wir sehen uns am Freitag beim Fischbrötchen! 🐟");
     }
 
-    function formatEuro(val) {
-      return val.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+    // --- ADMIN MODAL & AUSWERTUNG ---
+    async function openAdminModal() {
+      document.getElementById("adminModal").classList.remove("hidden");
+      lucide.createIcons();
+      await refreshLiveOrders();
     }
+
+    function closeAdminModal() {
+      document.getElementById("adminModal").classList.add("hidden");
+    }
+
+    function switchAdminTab(tab) {
+      currentAdminTab = tab;
+      const aggBtn = document.getElementById("tabAggBtn");
+      const usersBtn = document.getElementById("tabUsersBtn");
+
+      if (tab === "agg") {
+        aggBtn.className = "px-3 py-1.5 border-b-2 border-blue-900 text-blue-900 font-black";
+        usersBtn.className = "px-3 py-1.5 border-b-2 border-transparent text-slate-500 font-bold";
+      } else {
+        usersBtn.className = "px-3 py-1.5 border-b-2 border-blue-900 text-blue-900 font-black";
+        aggBtn.className = "px-3 py-1.5 border-b-2 border-transparent text-slate-500 font-bold";
+      }
+      renderAdminContent();
+    }
+
+    async function refreshLiveOrders() {
+      if (!window.db || !window.getDocs) return;
+      
+      const content = document.getElementById("adminTabContent");
+      content.innerHTML = `<p class="text-center text-slate-400 py-6">Lade Bestellungen aus Firebase...</p>`;
+
+      try {
+        const snap = await window.getDocs(window.collection(window.db, window.ORDERS_COL));
+        liveOrders = [];
+        snap.forEach(d => {
+          liveOrders.push({ id: d.id, ...d.data() });
+        });
+
+        calculateAdminStats();
+        renderAdminContent();
+      } catch (err) {
+        console.error("Fehler beim Laden:", err);
+        content.innerHTML = `<p class="text-center text-red-500 py-4">Fehler beim Laden aus Firebase. Bitte Berechtigungen prüfen.</p>`;
+      }
+    }
+
+    function calculateAdminStats() {
+      const totalOrders = liveOrders.length;
+      let totalItems = 0;
+      let totalRev = 0;
+
+      liveOrders.forEach(o => {
+        totalRev += Number(o.gesamtpreis) || 0;
+        if (o.artikel && Array.isArray(o.artikel)) {
+          o.artikel.forEach(a => {
+            totalItems += Number(a.menge) || 1;
+          });
+        }
+      });
+
+      document.getElementById("adminTotalOrders").textContent = totalOrders;
+      document.getElementById("adminTotalItems").textContent = totalItems;
+      document.getElementById("adminTotalRevenue").textContent = formatEuro(totalRev);
+    }
+
+    function renderAdminContent() {
+      const content = document.getElementById("adminTabContent");
+      
+      if (liveOrders.length === 0) {
+        content.innerHTML = `<p class="text-center text-slate-400 py-8">Bislang noch keine Bestellungen in der Cloud vorhanden.</p>`;
+        return;
+      }
+
+      if (currentAdminTab === "agg") {
+        // Aggregation nach Speise & Option
+        const agg = {};
+        liveOrders.forEach(o => {
+          (o.artikel || []).forEach(a => {
+            const key = `${a.speise} (${a.details || 'Standard'})`;
+            if (!agg[key]) {
+              agg[key] = { speise: a.speise, details: a.details, menge: 0, summe: 0 };
+            }
+            agg[key].menge += Number(a.menge) || 1;
+            agg[key].summe += Number(a.gesamt) || 0;
+          });
+        });
+
+        const sortedKeys = Object.keys(agg).sort();
+
+        content.innerHTML = `
+          <div class="space-y-1.5">
+            ${sortedKeys.map(k => `
+              <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                <div>
+                  <span class="font-extrabold text-slate-900 text-sm">${agg[k].menge}x ${agg[k].speise}</span>
+                  <p class="text-[11px] text-slate-500 font-medium">${agg[k].details}</p>
+                </div>
+                <span class="font-black text-slate-800">${formatEuro(agg[k].summe)}</span>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      } else {
+        // Auflistung nach Besteller
+        content.innerHTML = `
+          <div class="space-y-2">
+            ${liveOrders.map(o => `
+              <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div class="flex justify-between items-start border-b border-slate-200 pb-1.5 mb-1.5">
+                  <div>
+                    <span class="font-black text-blue-950 text-sm">${o.besteller}</span>
+                    <span class="ml-2 text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Gebucht</span>
+                  </div>
+                  <span class="font-black text-blue-900 text-sm">${formatEuro(o.gesamtpreis || 0)}</span>
+                </div>
+                <ul class="space-y-0.5 text-slate-600 text-[11px]">
+                  ${(o.artikel || []).map(a => `
+                    <li>• <b>${a.menge}x</b> ${a.speise} <span class="text-slate-400">(${a.details})</span></li>
+                  `).join("")}
+                </ul>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+    }
+
+    // --- WHATSAPP EXPORT FÜR DEN FISCHMANN ---
+    function sendWhatsAppToVendor() {
+      if (liveOrders.length === 0) {
+        alert("Keine Bestellungen zur Übertragung vorhanden.");
+        return;
+      }
+
+      // Aggregierte Liste aufbauen
+      const agg = {};
+      let totalPieces = 0;
+      let grandTotal = 0;
+
+      liveOrders.forEach(o => {
+        grandTotal += Number(o.gesamtpreis) || 0;
+        (o.artikel || []).forEach(a => {
+          const key = `${a.speise} (${a.details || 'Standard'})`;
+          if (!agg[key]) agg[key] = { speise: a.speise, details: a.details, menge: 0 };
+          const m = Number(a.menge) || 1;
+          agg[key].menge += m;
+          totalPieces += m;
+        });
+      });
+
+      let text = `🐟 *Fridays for Fischbrötchen - Bestellung* 🐟
+
+Moin! Hier ist unsere Gesamtbestellung für Freitag:
+
+`;
+
+      Object.keys(agg).sort().forEach(k => {
+        text += `• *${agg[k].menge}x* ${agg[k].speise}
+   _${agg[k].details}_
+`;
+      });
+
+      text += `
+📦 *Gesamt:* ${totalPieces} Teile (${formatEuro(grandTotal)})
+`;
+      text += `⏱ Abholung wie gewohnt am Freitag.
+Vielen Dank!`;
+
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(waUrl, "_blank");
+    }
+
+    // --- RESET ALLER BESTELLUNGEN ---
+    async function confirmResetAllOrders() {
+      const sicher = confirm("Möchtest du wirklich ALLE Bestellungen aus der Cloud löschen (z. B. nach dem Freitags-Essen)?");
+      if (!sicher) return;
+
+      const code = prompt("Tippe 'LEEREN' zur Bestätigung:");
+      if (code !== "LEEREN") {
+        alert("Abgebrochen.");
+        return;
+      }
+
+      if (!window.db || !window.deleteDoc || !window.doc) return;
+
+      try {
+        for (const ord of liveOrders) {
+          await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, ord.id));
+        }
+        alert("Alle Bestellungen in der Cloud wurden erfolgreich zurückgesetzt!");
+        await refreshLiveOrders();
+      } catch (err) {
+        console.error("Fehler beim Löschen:", err);
+        alert("Fehler beim Löschen der Datensätze.");
+      }
+    }
+
+    function formatEuro(val) {
+      return (Number(val) || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+    }
+
+    // Globale Zuordnungen
+    window.handleAdminTrigger = handleAdminTrigger;
+    window.openAdminModal = openAdminModal;
+    window.closeAdminModal = closeAdminModal;
+    window.switchAdminTab = switchAdminTab;
+    window.refreshLiveOrders = refreshLiveOrders;
+    window.sendWhatsAppToVendor = sendWhatsAppToVendor;
+    window.confirmResetAllOrders = confirmResetAllOrders;
+    window.editUserPrompt = editUserPrompt;
+    window.saveUserNames = saveUserNames;
+    window.setCategory = setCategory;
+    window.openConfigModal = openConfigModal;
+    window.closeConfigModal = closeConfigModal;
+    window.selectOpt = selectOpt;
+    window.adjustQuantity = adjustQuantity;
+    window.addCurrentItemToCart = addCurrentItemToCart;
+    window.removeCartItem = removeCartItem;
+    window.toggleCartModal = toggleCartModal;
+    window.submitOrder = submitOrder;
+    window.copyText = copyText;
+    window.finishOrderAndReload = finishOrderAndReload;
   </script>
 </body>
 </html>
