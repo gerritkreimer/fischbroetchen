@@ -372,13 +372,17 @@
         </button>
       </div>
 
-      <!-- Tabs: Aggregiert vs Besteller -->
-      <div class="flex space-x-2 border-b border-slate-200 pb-1 text-xs font-bold">
-        <button id="tabAggBtn" onclick="switchAdminTab('agg')" class="px-3 py-1.5 border-b-2 border-blue-900 text-blue-900">
+      <!-- Tabs: Aggregiert vs Besteller vs Archiv -->
+      <div class="flex space-x-1.5 border-b border-slate-200 pb-1 text-xs font-bold overflow-x-auto no-scrollbar">
+        <button id="tabAggBtn" onclick="switchAdminTab('agg')" class="px-2.5 py-1.5 border-b-2 border-blue-900 text-blue-900 whitespace-nowrap">
           Einkaufsliste Fischmann
         </button>
-        <button id="tabUsersBtn" onclick="switchAdminTab('users')" class="px-3 py-1.5 border-b-2 border-transparent text-slate-500">
+        <button id="tabUsersBtn" onclick="switchAdminTab('users')" class="px-2.5 py-1.5 border-b-2 border-transparent text-slate-500 whitespace-nowrap">
           Besteller-Abrechnung
+        </button>
+        <button id="tabHistoryBtn" onclick="switchAdminTab('history')" class="px-2.5 py-1.5 border-b-2 border-transparent text-slate-500 whitespace-nowrap flex items-center space-x-1">
+          <i data-lucide="archive" class="w-3.5 h-3.5"></i>
+          <span>Historie / Archiv</span>
         </button>
       </div>
 
@@ -393,8 +397,9 @@
           <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
           <span>Aktualisieren</span>
         </button>
-        <button onclick="confirmResetAllOrders()" class="text-red-500 hover:text-red-700 font-semibold">
-          Liste leeren (Reset für nächste Woche)
+        <button onclick="archiveCurrentOrders()" class="text-amber-700 hover:text-amber-900 font-bold flex items-center space-x-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1.5 rounded-xl transition">
+          <i data-lucide="archive" class="w-3.5 h-3.5"></i>
+          <span>Woche abschließen & ins Archiv verschieben</span>
         </button>
       </div>
 
@@ -995,15 +1000,21 @@
         );
         const snap = await window.getDocs(q);
 
-        if (snap.empty) {
+        let docs = [];
+        snap.forEach(d => {
+          const data = d.data();
+          if (!data.archiviert) {
+            docs.push({ id: d.id, ...data });
+          }
+        });
+
+        if (docs.length === 0) {
           myCurrentOrderDoc = null;
           card.classList.add("hidden");
           return;
         }
 
-        // Neueste Bestellung nehmen
-        let docs = [];
-        snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+        // Neueste aktive Bestellung nehmen
         myCurrentOrderDoc = docs[docs.length - 1];
 
         // UI rendern
@@ -1117,7 +1128,9 @@
             })),
             erstelltAm: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString(),
             status: "offen",
-            bezahlt: false
+            bezahlt: false,
+            archiviert: false,
+            terminDatum: nextEventDateFormatted || "Freitag"
           };
           
           await window.addDoc(window.collection(window.db, window.ORDERS_COL), orderDoc);
@@ -1189,17 +1202,24 @@
       document.getElementById("adminModal").classList.add("hidden");
     }
 
+    let archivedOrders = [];
+
     function switchAdminTab(tab) {
       currentAdminTab = tab;
       const aggBtn = document.getElementById("tabAggBtn");
       const usersBtn = document.getElementById("tabUsersBtn");
+      const histBtn = document.getElementById("tabHistoryBtn");
+
+      [aggBtn, usersBtn, histBtn].forEach(b => {
+        if (b) b.className = "px-2.5 py-1.5 border-b-2 border-transparent text-slate-500 font-bold whitespace-nowrap flex items-center space-x-1";
+      });
 
       if (tab === "agg") {
-        aggBtn.className = "px-3 py-1.5 border-b-2 border-blue-900 text-blue-900 font-black";
-        usersBtn.className = "px-3 py-1.5 border-b-2 border-transparent text-slate-500 font-bold";
-      } else {
-        usersBtn.className = "px-3 py-1.5 border-b-2 border-blue-900 text-blue-900 font-black";
-        aggBtn.className = "px-3 py-1.5 border-b-2 border-transparent text-slate-500 font-bold";
+        aggBtn.className = "px-2.5 py-1.5 border-b-2 border-blue-900 text-blue-900 font-black whitespace-nowrap flex items-center space-x-1";
+      } else if (tab === "users") {
+        usersBtn.className = "px-2.5 py-1.5 border-b-2 border-blue-900 text-blue-900 font-black whitespace-nowrap flex items-center space-x-1";
+      } else if (tab === "history") {
+        histBtn.className = "px-2.5 py-1.5 border-b-2 border-blue-900 text-blue-900 font-black whitespace-nowrap flex items-center space-x-1";
       }
       renderAdminContent();
     }
@@ -1213,8 +1233,15 @@
       try {
         const snap = await window.getDocs(window.collection(window.db, window.ORDERS_COL));
         liveOrders = [];
+        archivedOrders = [];
+
         snap.forEach(d => {
-          liveOrders.push({ id: d.id, ...d.data() });
+          const ord = { id: d.id, ...d.data() };
+          if (ord.archiviert === true) {
+            archivedOrders.push(ord);
+          } else {
+            liveOrders.push(ord);
+          }
         });
 
         calculateAdminStats();
@@ -1364,6 +1391,68 @@
           </div>
         `;
         lucide.createIcons();
+            } else if (currentAdminTab === "history") {
+        // HISTORIE / ARCHIV TAB
+        if (archivedOrders.length === 0) {
+          content.innerHTML = `
+            <div class="text-center py-8 text-slate-400 space-y-2">
+              <i data-lucide="archive" class="w-10 h-10 mx-auto opacity-30"></i>
+              <p class="font-semibold text-xs">Das Archiv ist aktuell noch leer.</p>
+              <p class="text-[11px] text-slate-400">Bestellungen wandern hierhin, sobald du am Freitag "Woche abschließen" klickst.</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        // Gruppierung nach TerminDatum
+        const byTermin = {};
+        archivedOrders.forEach(o => {
+          const tKey = o.terminDatum || (o.erstelltAm ? new Date(o.erstelltAm).toLocaleDateString('de-DE') : "Vergangener Termin");
+          if (!byTermin[tKey]) byTermin[tKey] = [];
+          byTermin[tKey].push(o);
+        });
+
+        const sortedTermine = Object.keys(byTermin).reverse();
+
+        content.innerHTML = `
+          <div class="space-y-4">
+            ${sortedTermine.map((tName, idx) => {
+              const termOrders = byTermin[tName];
+              const tCount = termOrders.length;
+              const tSum = termOrders.reduce((s, o) => s + (Number(o.gesamtpreis) || 0), 0);
+
+              return `
+                <div class="bg-slate-100/90 border border-slate-200 rounded-2xl p-3 text-xs">
+                  <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                    <div>
+                      <span class="font-black text-slate-900 text-sm flex items-center space-x-1">
+                        <i data-lucide="calendar-check" class="w-3.5 h-3.5 text-blue-700"></i>
+                        <span>${tName}</span>
+                      </span>
+                      <p class="text-[10px] text-slate-500 font-semibold">${tCount} Besteller • Umsatz: ${formatEuro(tSum)}</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-2 space-y-1.5">
+                    ${termOrders.map(o => `
+                      <div class="p-2 bg-white rounded-xl border border-slate-200/80">
+                        <div class="flex justify-between items-center">
+                          <span class="font-bold text-slate-900">${o.besteller}</span>
+                          <span class="font-black text-blue-950">${formatEuro(o.gesamtpreis || 0)}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-0.5">
+                          ${(o.artikel || []).map(a => `${a.menge}x ${a.speise} (${a.details || 'Standard'})`).join(', ')}
+                        </p>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+        lucide.createIcons();
       }
     }
 
@@ -1476,7 +1565,41 @@
       }
     }
 
-    // --- RESET ALLER BESTELLUNGEN ---
+    
+    // --- ARCHIVIERUNG DER AKTUELLEN WOCHE (STATT HARTEM LÖSCHEN) ---
+    async function archiveCurrentOrders() {
+      if (liveOrders.length === 0) {
+        alert("Es liegen aktuell keine offenen Bestellungen der Woche vor.");
+        return;
+      }
+
+      const ok = confirm(`Möchtest du die ${liveOrders.length} Bestellungen dieser Woche archivieren?\n\nSie werden sicher in der Historie abgelegt. Nichts geht verloren!`);
+      if (!ok) return;
+
+      if (!window.db || !window.updateDoc || !window.doc) return;
+
+      try {
+        const terminName = nextEventDateFormatted || "Freitag";
+
+        for (const ord of liveOrders) {
+          const docRef = window.doc(window.db, window.ORDERS_COL, ord.id);
+          await window.updateDoc(docRef, {
+            archiviert: true,
+            archiviertAm: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString(),
+            terminDatum: terminName
+          });
+        }
+
+        alert("Bestellungen wurden erfolgreich ins Archiv verschoben! Die App ist bereit für die nächste Woche.");
+        await refreshLiveOrders();
+        checkAndLoadUserOrder();
+      } catch (err) {
+        console.error("Fehler beim Archivieren:", err);
+        alert("Fehler beim Archivieren: " + err.message);
+      }
+    }
+
+    // --- ALTE RESET FUNKTION ERSETZT ---
     async function confirmResetAllOrders() {
       const sicher = confirm("Möchtest du wirklich ALLE Bestellungen aus der Cloud löschen (z. B. nach dem Freitags-Essen)?");
       if (!sicher) return;
@@ -1512,7 +1635,7 @@
     window.switchAdminTab = switchAdminTab;
     window.refreshLiveOrders = refreshLiveOrders;
     window.sendWhatsAppToVendor = sendWhatsAppToVendor;
-    window.confirmResetAllOrders = confirmResetAllOrders;
+    window.archiveCurrentOrders = archiveCurrentOrders;
     window.deleteSingleOrder = deleteSingleOrder;
     window.updateShopStatusBanner = updateShopStatusBanner;
     window.editUserPrompt = editUserPrompt;
