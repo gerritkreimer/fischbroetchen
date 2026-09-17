@@ -8,9 +8,12 @@
   <meta name="theme-color" content="#1e3a8a">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>
-    if ('serviceWorker' in navigator) {
+    // Service Worker nur registrieren, wenn vorhanden
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW registration failed:', err));
+        fetch('./sw.js', { method: 'HEAD' }).then(res => {
+          if (res.ok) navigator.serviceWorker.register('./sw.js').catch(() => {});
+        }).catch(() => {});
       });
     }
   </script>
@@ -1340,7 +1343,7 @@
             }).join("")}
           </div>
         `;
-      } else {
+      } else if (currentAdminTab === "users") {
         // Auflistung nach Besteller mit Abhaken der Zahlung
         content.innerHTML = `
           <div class="space-y-2.5">
