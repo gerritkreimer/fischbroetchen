@@ -1267,32 +1267,50 @@
       }
 
       if (currentAdminTab === "agg") {
-        // Aggregation nach Speise & Option
-        const agg = {};
+        // Aggregation nach Speise mit Varianten
+        const dishesMap = {};
         liveOrders.forEach(o => {
           (o.artikel || []).forEach(a => {
-            const key = `${a.speise} (${a.details || 'Standard'})`;
-            if (!agg[key]) {
-              agg[key] = { speise: a.speise, details: a.details, menge: 0, summe: 0 };
+            const dishName = a.speise;
+            const details = (a.details || "").trim();
+            const menge = Number(a.menge) || 1;
+            const summe = Number(a.gesamt) || 0;
+
+            if (!dishesMap[dishName]) {
+              dishesMap[dishName] = { total: 0, summe: 0, variants: {} };
             }
-            agg[key].menge += Number(a.menge) || 1;
-            agg[key].summe += Number(a.gesamt) || 0;
+
+            dishesMap[dishName].total += menge;
+            dishesMap[dishName].summe += summe;
+
+            const varKey = (!details || details === "Standard") ? "" : details;
+            if (varKey) {
+              dishesMap[dishName].variants[varKey] = (dishesMap[dishName].variants[varKey] || 0) + menge;
+            }
           });
         });
 
-        const sortedKeys = Object.keys(agg).sort();
+        const sortedDishes = Object.keys(dishesMap).sort();
 
         content.innerHTML = `
           <div class="space-y-1.5">
-            ${sortedKeys.map(k => `
-              <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                <div>
-                  <span class="font-extrabold text-slate-900 text-sm">${agg[k].menge}x ${agg[k].speise}</span>
-                  <p class="text-[11px] text-slate-500 font-medium">${agg[k].details}</p>
+            ${sortedDishes.map(dName => {
+              const item = dishesMap[dName];
+              const varKeys = Object.keys(item.variants);
+              const variantText = varKeys.length > 0 
+                ? varKeys.map(vk => `${item.variants[vk]}x ${vk}`).join(", ") 
+                : "Standard";
+
+              return `
+                <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                  <div>
+                    <span class="font-extrabold text-slate-900 text-sm">${item.total}x ${dName}</span>
+                    <p class="text-[11px] text-slate-500 font-medium">${variantText}</p>
+                  </div>
+                  <span class="font-black text-slate-800">${formatEuro(item.summe)}</span>
                 </div>
-                <span class="font-black text-slate-800">${formatEuro(agg[k].summe)}</span>
-              </div>
-            `).join("")}
+              `;
+            }).join("")}
           </div>
         `;
       } else {
@@ -1375,46 +1393,64 @@
       }
     }
 
-    // --- WHATSAPP EXPORT FÜR DEN FISCHMANN ---
+    // --- WHATSAPP EXPORT FÜR DEN FISCHMANN (GRUPPIERT NACH SPEISE) ---
     function sendWhatsAppToVendor() {
       if (liveOrders.length === 0) {
         alert("Keine Bestellungen zur Übertragung vorhanden.");
         return;
       }
 
-      // Aggregierte Liste aufbauen
-      const agg = {};
+      // Gruppierung nach Hauptspeise, darunter nach Varianten
+      // dishesMap: { "Saftlachsbrötchen": { total: 6, variants: { "Honig-Senf | mit Salat": 3, "Remo | mit Salat": 3 } } }
+      const dishesMap = {};
       let totalPieces = 0;
       let grandTotal = 0;
 
       liveOrders.forEach(o => {
         grandTotal += Number(o.gesamtpreis) || 0;
         (o.artikel || []).forEach(a => {
-          const key = `${a.speise} (${a.details || 'Standard'})`;
-          if (!agg[key]) agg[key] = { speise: a.speise, details: a.details, menge: 0 };
-          const m = Number(a.menge) || 1;
-          agg[key].menge += m;
-          totalPieces += m;
+          const dishName = a.speise;
+          const details = (a.details || "").trim();
+          const menge = Number(a.menge) || 1;
+
+          if (!dishesMap[dishName]) {
+            dishesMap[dishName] = { total: 0, variants: {} };
+          }
+
+          dishesMap[dishName].total += menge;
+          totalPieces += menge;
+
+          const varKey = (!details || details === "Standard") ? "" : details;
+          if (varKey) {
+            dishesMap[dishName].variants[varKey] = (dishesMap[dishName].variants[varKey] || 0) + menge;
+          }
         });
       });
 
-      let text = `🐟 *Fridays for Fischbrötchen - Bestellung* 🐟
+      const dateHeading = nextEventDateFormatted || "Freitag";
+      let text = `🐟 *Fridays for Fischbrötchen - Bestellung* 🐟\n\n`;
+      text += `Moin! Hier ist unsere Gesamtbestellung für *${dateHeading}*:\n\n`;
 
-Moin! Hier ist unsere Gesamtbestellung für Freitag:
+      // Alphabetisch sortiert ausgeben
+      Object.keys(dishesMap).sort().forEach(dishName => {
+        const item = dishesMap[dishName];
+        const varKeys = Object.keys(item.variants);
 
-`;
-
-      Object.keys(agg).sort().forEach(k => {
-        text += `• *${agg[k].menge}x* ${agg[k].speise}
-   _${agg[k].details}_
-`;
+        if (varKeys.length === 0) {
+          // Keine Varianten (z. B. Standard-Brötchen, Schale Sauce, Forellenfilets)
+          text += `• *${item.total}x* ${dishName}\n`;
+        } else {
+          // Varianten zusammenfassen, z. B. (3x Remo | Salat, 3x Honig-Senf | Salat)
+          const varDetails = varKeys
+            .map(vk => `${item.variants[vk]}x ${vk}`)
+            .join(", ");
+          text += `• *${item.total}x* ${dishName} (${varDetails})\n`;
+        }
       });
 
-      text += `
-📦 *Gesamt:* ${totalPieces} Teile (${formatEuro(grandTotal)})
-`;
-      text += `⏱ Abholung wie gewohnt am Freitag.
-Vielen Dank!`;
+      text += `\n📦 *Gesamt:* ${totalPieces} Teile (${formatEuro(grandTotal)})\n`;
+      text += `⏱ Abholung wie gewohnt am Freitag.\n`;
+      text += `Vielen Dank!`;
 
       const waUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
       window.open(waUrl, "_blank");
