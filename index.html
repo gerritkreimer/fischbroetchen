@@ -914,7 +914,7 @@
       } else {
         banner.className = "mb-3 bg-red-50 border border-red-200 text-red-900 rounded-xl p-3 flex items-center space-x-3 text-xs shadow-sm transition-colors duration-300";
         dot.className = "w-2.5 h-2.5 rounded-full bg-red-600 flex-shrink-0 shadow-sm"; // Dauerhaft rot, kein Blinken!
-        text.innerHTML = `Bestellfenster für <span class="font-black text-red-950">${nextEventDateFormatted || 'Freitag'}</span> <span class="font-bold uppercase tracking-wider bg-red-200/80 px-1.5 py-0.5 rounded text-[10px] text-red-800 ml-0.5">geschlossen</span> `;
+        text.innerHTML = `Bestellfenster für <span class="font-black text-red-950">${nextEventDateFormatted || 'Freitag'}</span> <span class="font-bold uppercase tracking-wider bg-red-200/80 px-1.5 py-0.5 rounded text-[10px] text-red-800 ml-0.5">geschlossen</span> (wieder ab Mo 06:00 Uhr)`;
         if (submitBtn) {
           submitBtn.disabled = true;
           submitBtn.classList.add("opacity-50", "cursor-not-allowed");
@@ -1431,20 +1431,16 @@
       let text = `🐟 *Fridays for Fischbrötchen - Bestellung* 🐟\n\n`;
       text += `Moin! Hier ist unsere Gesamtbestellung für *${dateHeading}*:\n\n`;
 
-      // Alphabetisch sortiert ausgeben
+      // Alphabetisch sortiert ausgeben (Varianten untereinander)
       Object.keys(dishesMap).sort().forEach(dishName => {
         const item = dishesMap[dishName];
-        const varKeys = Object.keys(item.variants);
+        const varKeys = Object.keys(item.variants).sort();
 
-        if (varKeys.length === 0) {
-          // Keine Varianten (z. B. Standard-Brötchen, Schale Sauce, Forellenfilets)
-          text += `• *${item.total}x* ${dishName}\n`;
-        } else {
-          // Varianten zusammenfassen, z. B. (3x Remo | Salat, 3x Honig-Senf | Salat)
-          const varDetails = varKeys
-            .map(vk => `${item.variants[vk]}x ${vk}`)
-            .join(", ");
-          text += `• *${item.total}x* ${dishName} (${varDetails})\n`;
+        text += `• *${item.total}x* ${dishName}\n`;
+        if (varKeys.length > 0) {
+          varKeys.forEach(vk => {
+            text += `   ${item.variants[vk]}x ${vk}\n`;
+          });
         }
       });
 
