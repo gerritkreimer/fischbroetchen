@@ -55,6 +55,17 @@
     </div>
   </header>
 
+  <!-- Admin Proxy Banner (Aktiv, wenn Admin für einen Kollegen bucht) -->
+  <div id="adminProxyBanner" class="hidden bg-amber-400 border-b border-amber-500 text-slate-950 px-4 py-2 text-xs font-black flex items-center justify-between sticky top-[64px] z-20 shadow-md">
+    <div class="flex items-center space-x-2">
+      <i data-lucide="shield-alert" class="w-4 h-4 text-amber-950"></i>
+      <span>ADMIN-BUCHUNG FÜR: <span id="adminProxyNameDisplay" class="underline decoration-2">--</span></span>
+    </div>
+    <button onclick="exitAdminProxyOrder()" class="bg-slate-900 hover:bg-slate-800 text-white px-2 py-0.5 rounded text-[10px] uppercase font-bold transition active:scale-95">
+      Beenden ✕
+    </button>
+  </div>
+
   <!-- Main Container -->
   <main class="max-w-md mx-auto w-full px-3 pt-3 flex-1">
 
@@ -123,6 +134,41 @@
         <span>Ansehen & Bestellen</span>
         <i data-lucide="chevron-right" class="w-4 h-4"></i>
       </button>
+    </div>
+  </div>
+
+  <!-- MODAL: Admin erfasst Kollegen für Sonderbuchung -->
+  <div id="adminProxyModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-left">
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 bg-amber-100 text-amber-900 rounded-2xl flex items-center justify-center font-bold">
+          <i data-lucide="user-plus" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-black text-slate-900 leading-tight">Für wen bestellen?</h3>
+          <p class="text-xs text-slate-500">Admin-Sonderbuchung</p>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Vorname des Kollegen</label>
+          <input type="text" id="proxyFirstName" placeholder="z. B. Klaus" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nachname des Kollegen</label>
+          <input type="text" id="proxyLastName" placeholder="z. B. Meier" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-600 focus:bg-white transition">
+        </div>
+      </div>
+
+      <div class="mt-5 space-y-2">
+        <button onclick="confirmAdminProxyOrder()" class="w-full bg-blue-900 hover:bg-blue-800 active:scale-95 text-white font-bold py-3 rounded-xl shadow-md transition text-sm flex items-center justify-center space-x-2">
+          <span>Als Besteller auswählen & Menü öffnen</span>
+        </button>
+        <button onclick="closeAdminProxyModal()" class="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition">
+          Abbrechen
+        </button>
+      </div>
     </div>
   </div>
 
@@ -349,6 +395,14 @@
             Speichern
           </button>
         </div>
+      </div>
+
+      <!-- Notfall-Bestellung für Kollegen durch Admin -->
+      <div class="mb-3">
+        <button onclick="startAdminOrderForColleague()" class="w-full bg-blue-900 hover:bg-blue-800 active:scale-95 text-white font-black py-2.5 px-4 rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-xs">
+          <i data-lucide="user-plus" class="w-4 h-4 text-amber-400"></i>
+          <span>Bestellung für Kollegen aufgeben (Sonderbuchung)</span>
+        </button>
       </div>
 
       <!-- Kacheln: Kennzahlen -->
@@ -818,9 +872,37 @@
     function toggleCartModal(show) {
       const modal = document.getElementById("cartModal");
       if (show) {
-        if (!getFormattedUser()) editUserPrompt();
+        const orderUser = adminProxyTarget ? adminProxyTarget : getFormattedUser();
+        if (!orderUser) {
+          editUserPrompt();
+          return;
+        }
+        document.getElementById("cartUserName").textContent = orderUser;
+
+        const isClosed = !isOrderWindowOpen();
+        const isAdmin = (sessionStorage.getItem("fisch_admin_authenticated") === "true") || !!adminProxyTarget;
+        const submitBtn = document.getElementById("btnSubmitOrder");
+
+        if (submitBtn) {
+          if (isClosed && isAdmin) {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+            submitBtn.className = "w-full bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-black py-3.5 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-base";
+            submitBtn.innerHTML = `<i data-lucide="shield-check" class="w-5 h-5"></i><span>Als Admin verbindlich buchen (Sonderfreigabe)</span>`;
+          } else if (isClosed && !isAdmin) {
+            submitBtn.disabled = true;
+            submitBtn.className = "w-full bg-slate-400 opacity-50 cursor-not-allowed text-white font-black py-3.5 rounded-xl shadow transition flex items-center justify-center space-x-2 text-base";
+            submitBtn.innerHTML = `<span>Bestellfenster geschlossen</span>`;
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.className = "w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-black py-3.5 rounded-xl shadow-lg transition flex items-center justify-center space-x-2 text-base";
+            submitBtn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i><span>Verbindlich bestellen & zahlen</span>`;
+          }
+        }
+
         renderCartList();
         modal.classList.remove("hidden");
+        lucide.createIcons();
       } else {
         modal.classList.add("hidden");
       }
@@ -861,6 +943,58 @@
     }
 
 
+
+    
+    // --- ADMIN SONDERBUCHUNG FÜR KOLLEGEN (AUCH BEI GESCHLOSSENEM SHOP) ---
+    let adminProxyTarget = null;
+
+    function startAdminOrderForColleague() {
+      closeAdminModal();
+      document.getElementById("proxyFirstName").value = "";
+      document.getElementById("proxyLastName").value = "";
+      document.getElementById("adminProxyModal").classList.remove("hidden");
+      lucide.createIcons();
+    }
+
+    function closeAdminProxyModal() {
+      document.getElementById("adminProxyModal").classList.add("hidden");
+    }
+
+    function confirmAdminProxyOrder() {
+      const vName = document.getElementById("proxyFirstName").value.trim();
+      const nName = document.getElementById("proxyLastName").value.trim();
+
+      if (!vName || !nName) {
+        alert("Bitte gib sowohl Vor- als auch Nachnamen des Kollegen ein.");
+        return;
+      }
+
+      const formatted = `${nName.charAt(0).toUpperCase() + nName.slice(1)}, ${vName.charAt(0).toUpperCase() + vName.slice(1)}`;
+      adminProxyTarget = formatted;
+      closeAdminProxyModal();
+
+      // Banner einblenden
+      document.getElementById("adminProxyNameDisplay").textContent = adminProxyTarget;
+      document.getElementById("adminProxyBanner").classList.remove("hidden");
+
+      // Warenkorb leeren für neue Buchung
+      cart = [];
+      updateCartUI();
+      updateShopStatusBanner();
+      lucide.createIcons();
+
+      alert(`Admin-Buchungsmodus aktiv für: ${adminProxyTarget}\n\nDu kannst jetzt ganz regulär die Speisen zusammenstellen und buchen (die Zeit-Sperre ist für dich aufgehoben).`);
+    }
+
+    function exitAdminProxyOrder() {
+      adminProxyTarget = null;
+      document.getElementById("adminProxyBanner").classList.add("hidden");
+      cart = [];
+      updateCartUI();
+      updateShopStatusBanner();
+      updateUserDisplay();
+      checkAndLoadUserOrder();
+    }
 
     // --- TERMIN STEUERUNG (FIREBASE & DEFAULT FREITAG) ---
     let nextEventDateStr = ""; // z. B. "2026-09-18"
@@ -911,7 +1045,15 @@
       const openBtn = document.getElementById("btnOpenCart");
       const isOpen = isOrderWindowOpen();
 
-      if (isOpen) {
+      if (adminProxyTarget) {
+        banner.className = "mb-3 bg-amber-50 border border-amber-300 text-amber-950 rounded-xl p-3 flex items-center space-x-3 text-xs shadow-sm transition-colors duration-300";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping flex-shrink-0";
+        text.innerHTML = `Sonderbuchung aktiv für <span class="font-black">${adminProxyTarget}</span> (Bestellfenster für Admin freigeschaltet)`;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.classList.remove("opacity-50", "cursor-not-allowed");
+        }
+      } else if (isOpen) {
         banner.className = "mb-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl p-3 flex items-center space-x-3 text-xs shadow-sm transition-colors duration-300";
         dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping flex-shrink-0";
         text.innerHTML = `Bestellfenster für <span class="font-black text-emerald-950">${nextEventDateFormatted || 'Freitag'}</span> geöffnet: <span class="font-bold">Mo 06:00 – Do 12:00 Uhr</span>`;
@@ -1093,7 +1235,10 @@
 
     // --- CHECKOUT & FIREBASE SPEICHERUNG ---
     async function submitOrder() {
-      if (!isOrderWindowOpen()) {
+      const isClosed = !isOrderWindowOpen();
+      const isAdmin = (sessionStorage.getItem("fisch_admin_authenticated") === "true") || !!adminProxyTarget;
+
+      if (isClosed && !isAdmin) {
         alert("Das Bestellfenster für diesen Freitag ist seit Donnerstag 12:00 Uhr geschlossen. Neue Bestellungen sind leider nicht mehr möglich.");
         return;
       }
@@ -1103,7 +1248,7 @@
         return;
       }
       
-      const currentUser = getFormattedUser();
+      const currentUser = adminProxyTarget ? adminProxyTarget : getFormattedUser();
       if (!currentUser) {
         editUserPrompt();
         return;
@@ -1179,8 +1324,14 @@
       cart = [];
       updateCartUI();
       document.getElementById("paymentModal").classList.add("hidden");
-      alert("Fertig! Wir sehen uns am Freitag beim Fischbrötchen! 🐟");
-      checkAndLoadUserOrder();
+
+      if (adminProxyTarget) {
+        alert(`Sonderbestellung für ${adminProxyTarget} wurde erfolgreich in Firebase gebucht! 🐟`);
+        exitAdminProxyOrder();
+      } else {
+        alert("Fertig! Wir sehen uns am Freitag beim Fischbrötchen! 🐟");
+        checkAndLoadUserOrder();
+      }
     }
 
     // --- ADMIN MODAL & AUSWERTUNG (PIN-GESCHÜTZT) ---
@@ -1658,6 +1809,10 @@
     window.checkAndLoadUserOrder = checkAndLoadUserOrder;
     window.saveEventDateFromAdmin = saveEventDateFromAdmin;
     window.togglePaymentStatus = togglePaymentStatus;
+    window.startAdminOrderForColleague = startAdminOrderForColleague;
+    window.closeAdminProxyModal = closeAdminProxyModal;
+    window.confirmAdminProxyOrder = confirmAdminProxyOrder;
+    window.exitAdminProxyOrder = exitAdminProxyOrder;
   </script>
 </body>
 </html>
