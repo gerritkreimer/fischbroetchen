@@ -8,6 +8,7 @@
   <meta name="theme-color" content="#1e3a8a">
   <link rel="apple-touch-icon" href="icon-192.png">
   <script>
+    // Service Worker nur registrieren, wenn vorhanden
     if ('serviceWorker' in navigator && location.protocol === 'https:') {
       window.addEventListener('load', () => {
         fetch('./sw.js', { method: 'HEAD' }).then(res => {
@@ -16,7 +17,9 @@
       });
     }
   </script>
+  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     * { -webkit-tap-highlight-color: transparent; }
@@ -52,7 +55,7 @@
     </div>
   </header>
 
-  <!-- Admin Proxy Banner -->
+  <!-- Admin Proxy Banner (Aktiv, wenn Admin für einen Kollegen bucht) -->
   <div id="adminProxyBanner" class="hidden bg-amber-400 border-b border-amber-500 text-slate-950 px-4 py-2 text-xs font-black flex items-center justify-between sticky top-[64px] z-20 shadow-md">
     <div class="flex items-center space-x-2">
       <i data-lucide="shield-alert" class="w-4 h-4 text-amber-950"></i>
@@ -66,11 +69,15 @@
   <!-- Main Container -->
   <main class="max-w-md mx-auto w-full px-3 pt-3 flex-1">
 
+    <!-- Status Banner: Dynamische Ampel (Grün pulsierend / Rot dauerhaft) -->
     <div id="shopStatusBanner" class="mb-3 rounded-xl p-3 flex items-center space-x-3 text-xs shadow-sm transition-colors duration-300">
       <div id="statusDot" class="w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
-      <div id="statusBannerText" class="flex-1 font-medium"></div>
+      <div id="statusBannerText" class="flex-1 font-medium">
+        <!-- Dynamisch per JS -->
+      </div>
     </div>
 
+    <!-- Meine aktuelle Bestellung Card (Erscheint nur wenn Bestellung in Firebase vorliegt) -->
     <div id="userOrderCard" class="hidden mb-3 bg-white border-2 border-blue-600 rounded-2xl p-4 shadow-sm">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
         <div class="flex items-center space-x-1.5 text-blue-900">
@@ -80,7 +87,9 @@
         <span id="userOrderStatusBadge" class="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Gebucht</span>
       </div>
 
-      <div id="userOrderItemsList" class="py-2.5 space-y-1.5 text-xs"></div>
+      <div id="userOrderItemsList" class="py-2.5 space-y-1.5 text-xs">
+        <!-- Dynamisch befüllt -->
+      </div>
 
       <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
         <div>
@@ -95,8 +104,15 @@
       <p id="orderLockNotice" class="hidden text-[10px] text-amber-700 font-medium mt-1 text-right">Bestellfenster geschlossen (Keine Änderung mehr möglich)</p>
     </div>
 
-    <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-2 pt-1" id="categoryBar"></div>
-    <div class="space-y-2.5 mt-2" id="dishesList"></div>
+    <!-- Kategorien Tabs -->
+    <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-2 pt-1" id="categoryBar">
+      <!-- Dynamisch per JS -->
+    </div>
+
+    <!-- Speisen Liste -->
+    <div class="space-y-2.5 mt-2" id="dishesList">
+      <!-- Dynamisch per JS -->
+    </div>
 
   </main>
 
@@ -121,7 +137,7 @@
     </div>
   </div>
 
-  <!-- MODAL: Admin Proxy Modal -->
+  <!-- MODAL: Admin erfasst Kollegen für Sonderbuchung -->
   <div id="adminProxyModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-left">
       <div class="flex items-center space-x-3 mb-4">
@@ -156,7 +172,7 @@
     </div>
   </div>
 
-  <!-- MODAL: Nutzer-Registrierung -->
+  <!-- MODAL: Nutzer Vor- und Nachname erfassen -->
   <div id="userModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-left">
       <div class="flex items-center space-x-3 mb-4">
@@ -277,7 +293,7 @@
     </div>
   </div>
 
-  <!-- MODAL: Zahlungsauswahl -->
+  <!-- MODAL: Zahlungsauswahl (PayPal & Wero) -->
   <div id="paymentModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center">
       <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-3">
@@ -294,7 +310,7 @@
 
       <p class="text-xs font-bold text-slate-700 mb-2.5 self-start uppercase tracking-wider">Zahlungsmethode wählen:</p>
 
-      <!-- PayPal -->
+      <!-- OPTION 1: PAYPAL -->
       <div class="w-full bg-gradient-to-r from-[#0070ba] to-[#003087] text-white rounded-xl p-3 shadow-md mb-2.5 text-left">
         <div class="flex items-center justify-between mb-1">
           <div class="flex items-center space-x-1.5 font-black text-sm">
@@ -319,7 +335,7 @@
         </div>
       </div>
 
-      <!-- Wero -->
+      <!-- OPTION 2: WERO -->
       <div class="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-xl p-3 shadow-md mb-3 text-left">
         <div class="flex items-center justify-between mb-1">
           <div class="flex items-center space-x-1.5 font-black text-sm">
@@ -345,7 +361,7 @@
     </div>
   </div>
 
-  <!-- MODAL: ADMIN DASHBOARD -->
+  <!-- MODAL: ADMIN / AUSWERTUNG / WHATSAPP EXPORT -->
   <div id="adminModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center transition-opacity">
     <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[92vh] flex flex-col animate-in slide-in-from-bottom duration-200">
       
@@ -365,7 +381,7 @@
       </div>
 
       <!-- Termin-Verwaltung durch Admin -->
-      <div class="mb-3 bg-amber-50/80 border border-amber-200 rounded-2xl p-3 text-xs shrink-0 mt-3">
+      <div class="mb-3 bg-amber-50/80 border border-amber-200 rounded-2xl p-3 text-xs shrink-0">
         <div class="flex items-center justify-between mb-1.5">
           <span class="font-black text-amber-950 flex items-center space-x-1">
             <i data-lucide="calendar" class="w-3.5 h-3.5 text-amber-700"></i>
@@ -381,7 +397,7 @@
         </div>
       </div>
 
-      <!-- Sonderbuchung Button -->
+      <!-- Notfall-Bestellung für Kollegen durch Admin -->
       <div class="mb-3 shrink-0">
         <button onclick="startAdminOrderForColleague()" class="w-full bg-blue-900 hover:bg-blue-800 active:scale-95 text-white font-black py-2.5 px-4 rounded-xl shadow-md transition flex items-center justify-center space-x-2 text-xs">
           <i data-lucide="user-plus" class="w-4 h-4 text-amber-400"></i>
@@ -389,8 +405,8 @@
         </button>
       </div>
 
-      <!-- Kennzahlen -->
-      <div class="grid grid-cols-3 gap-2 mb-3 shrink-0">
+      <!-- Kacheln: Kennzahlen -->
+      <div class="grid grid-cols-3 gap-2 my-3 shrink-0">
         <div class="bg-blue-50 border border-blue-100 rounded-xl p-2.5 text-center">
           <p class="text-[10px] uppercase font-bold text-blue-600">Bestellungen</p>
           <p id="adminTotalOrders" class="text-lg font-black text-blue-950">0</p>
@@ -413,22 +429,24 @@
         </button>
       </div>
 
-      <!-- FIXIERTE TABS (GROSSZÜGIGES PILL-DESIGN OHNE FLEX-SQUASH) -->
-      <div class="shrink-0 my-2 bg-slate-200 p-1.5 rounded-2xl flex space-x-1.5 text-xs font-bold shadow-inner">
-        <button id="tabAggBtn" onclick="switchAdminTab('agg')" class="flex-1 py-2.5 px-2 text-center rounded-xl bg-blue-900 text-white font-black shadow-md transition flex items-center justify-center space-x-1">
+      <!-- Tabs: Aggregiert vs Besteller vs Archiv (Feste Segmented Bar mit Kontrast) -->
+      <div class="shrink-0 mb-3 bg-slate-200/90 p-1 rounded-2xl flex space-x-1 text-xs font-bold shadow-inner">
+        <button id="tabAggBtn" onclick="switchAdminTab('agg')" class="flex-1 py-2 px-1 text-center rounded-xl bg-blue-900 text-white font-black shadow-sm transition flex items-center justify-center space-x-1">
           <span>Einkaufsliste</span>
         </button>
-        <button id="tabUsersBtn" onclick="switchAdminTab('users')" class="flex-1 py-2.5 px-2 text-center rounded-xl bg-white text-slate-700 font-bold hover:bg-slate-50 transition flex items-center justify-center space-x-1">
+        <button id="tabUsersBtn" onclick="switchAdminTab('users')" class="flex-1 py-2 px-1 text-center rounded-xl bg-white/70 text-slate-700 font-bold hover:bg-white transition flex items-center justify-center space-x-1">
           <span>Besteller</span>
         </button>
-        <button id="tabHistoryBtn" onclick="switchAdminTab('history')" class="flex-1 py-2.5 px-2 text-center rounded-xl bg-white text-slate-700 font-bold hover:bg-slate-50 transition flex items-center justify-center space-x-1">
+        <button id="tabHistoryBtn" onclick="switchAdminTab('history')" class="flex-1 py-2 px-1 text-center rounded-xl bg-white/70 text-slate-700 font-bold hover:bg-white transition flex items-center justify-center space-x-1">
           <i data-lucide="archive" class="w-3.5 h-3.5"></i>
           <span>Archiv</span>
         </button>
       </div>
 
-      <!-- Scrollbarer Inhalt -->
-      <div class="overflow-y-auto py-2 flex-1 text-xs space-y-2 mt-1" id="adminTabContent"></div>
+      <!-- Tab Content: Scrollbar -->
+      <div class="overflow-y-auto py-3 flex-1 text-xs space-y-2" id="adminTabContent">
+        <!-- Dynamisch -->
+      </div>
 
       <!-- Admin Footer Aktionen -->
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs shrink-0">
@@ -462,7 +480,14 @@
       setDoc,
       updateDoc
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    import { 
+      getMessaging, 
+      getToken, 
+      onMessage,
+      isSupported
+    } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging.js";
 
+    // Deine echten Firebase-Keys
     const firebaseConfig = {
       apiKey: "AIzaSyBcoYOQDqx9Coj5cbJfhbUMMPd-Qy0T06I",
       authDomain: "fischbroetchen-65239.firebaseapp.com",
@@ -476,6 +501,7 @@
     const db = getFirestore(app);
     const ORDERS_COL = "bestellungen";
 
+    // Globale Referenzen für Modul -> Window
     window.db = db;
     window.ORDERS_COL = ORDERS_COL;
     window.addDoc = addDoc;
@@ -489,20 +515,35 @@
     window.getDoc = getDoc;
     window.setDoc = setDoc;
     window.updateDoc = updateDoc;
+    window.getToken = getToken;
+    window.onMessage = onMessage;
 
-    window.dispatchEvent(new CustomEvent("firebase-ready"));
+    isSupported().then(supported => {
+      if (supported) {
+        window.messaging = getMessaging(app);
+        window.messagingSupported = true;
+      } else {
+        window.messagingSupported = false;
+      }
+      window.dispatchEvent(new CustomEvent("firebase-ready"));
+    }).catch(() => {
+      window.messagingSupported = false;
+      window.dispatchEvent(new CustomEvent("firebase-ready"));
+    });
   </script>
 
   <script>
+    // --- KONFIGURATION ZAHLUNGEN ---
     const PAYPAL_ME_NAME = "langergk";
     const WERO_PHONE = "015222586689";
     const ADMIN_PIN = "9600";
 
     function isMiesmuschelSeason() {
-      const month = new Date().getMonth();
+      const month = new Date().getMonth(); // 0 = Jan ... 3 = Apr, 8 = Sep ... 11 = Dez
       return month >= 8 || month <= 3;
     }
 
+    // --- STAMMDATEN MATRIX ---
     const DISHES = [
       { id: 1, category: "Fischbrötchen", name: "Matjesbrötchen", price: 3.50, available: true, options1Title: "Zwiebeln", options1: [{ name: "mit Zwiebeln", price: 0 }, { name: "ohne Zwiebeln", price: 0 }], options2Title: "", options2: [] },
       { id: 2, category: "Fischbrötchen", name: "Bismarckheringsbrötchen", price: 3.50, available: true, options1Title: "Zwiebeln", options1: [{ name: "mit Zwiebeln", price: 0 }, { name: "ohne Zwiebeln", price: 0 }], options2Title: "", options2: [] },
@@ -532,25 +573,25 @@
       { id: 26, category: "Beilagen", name: "Schale Remoulade", price: 0.50, available: true, options1Title: "", options1: [], options2Title: "", options2: [] }
     ];
 
+    // --- APP STATE ---
     let userFirstName = localStorage.getItem("fisch_vorname") || "";
     let userLastName = localStorage.getItem("fisch_nachname") || "";
     let activeCategory = "Alle";
     let cart = [];
 
+    // Admin State
     let isAdminUnlocked = false; localStorage.removeItem("fisch_is_admin");
+    let adminClickCount = 0;
     let liveOrders = [];
-    let archivedOrders = [];
     let currentAdminTab = "agg";
-    let adminProxyTarget = null;
 
+    // Konfigurator State
     let currentDish = null;
     let selectedOpt1 = null;
     let selectedOpt2 = null;
     let selectedQuantity = 1;
 
-    let nextEventDateStr = "";
-    let nextEventDateFormatted = "";
-
+    // --- INITIALISIERUNG ---
     window.addEventListener("DOMContentLoaded", () => {
       initUser();
       renderCategories();
@@ -560,10 +601,12 @@
       checkAndLoadUserOrder();
       loadEventDate();
       updateShopStatusBanner();
+      checkPushBannerVisibility();
       lucide.createIcons();
     });
 
     window.addEventListener("firebase-ready", () => {
+      console.log("Firebase Firestore verbunden!");
       if (isAdminUnlocked) {
         refreshLiveOrders();
       }
@@ -571,6 +614,7 @@
       loadEventDate();
     });
 
+    // --- NUTZER-VERWALTUNG (GETRENNT NACH VOR- & NACHNAME) ---
     function getFormattedUser() {
       if (userLastName && userFirstName) {
         return `${userLastName}, ${userFirstName}`;
@@ -620,7 +664,9 @@
       document.getElementById("cartUserName").textContent = fullName || "Unbekannt";
     }
 
+    // --- ADMIN STEUERUNG (REIN ÜBER PIN 9600) ---
     function checkAdminStatus() {
+      // Keine automatische Freischaltung über Benutzernamen mehr!
       if (sessionStorage.getItem("fisch_admin_authenticated") === "true") {
         document.getElementById("adminBadge").classList.remove("hidden");
       }
@@ -630,6 +676,7 @@
       openAdminModal();
     }
 
+    // --- KATEGORIEN & SPEISEN RENDERN ---
     function renderCategories() {
       const bar = document.getElementById("categoryBar");
       const cats = ["Alle", "Fischbrötchen", "Fischvariationen", "Heiß & Fettig", "Muscheln", "Beilagen"];
@@ -700,6 +747,7 @@
       lucide.createIcons();
     }
 
+    // --- KONFIGURATOR MODAL ---
     function openConfigModal(dishId) {
       currentDish = DISHES.find(d => d.id === dishId);
       if (!currentDish || !currentDish.available) return;
@@ -913,6 +961,12 @@
       lucide.createIcons();
     }
 
+
+
+    
+    // --- ADMIN SONDERBUCHUNG FÜR KOLLEGEN (AUCH BEI GESCHLOSSENEM SHOP) ---
+    let adminProxyTarget = null;
+
     function startAdminOrderForColleague() {
       closeAdminModal();
       document.getElementById("proxyFirstName").value = "";
@@ -938,12 +992,15 @@
       adminProxyTarget = formatted;
       closeAdminProxyModal();
 
+      // Banner einblenden
       document.getElementById("adminProxyNameDisplay").textContent = adminProxyTarget;
       document.getElementById("adminProxyBanner").classList.remove("hidden");
 
+      // Warenkorb leeren für neue Buchung
       cart = [];
       updateCartUI();
       updateShopStatusBanner();
+      checkPushBannerVisibility();
       lucide.createIcons();
 
       alert(`Admin-Buchungsmodus aktiv für: ${adminProxyTarget}\n\nDu kannst jetzt ganz regulär die Speisen zusammenstellen und buchen (die Zeit-Sperre ist für dich aufgehoben).`);
@@ -955,13 +1012,103 @@
       cart = [];
       updateCartUI();
       updateShopStatusBanner();
+      checkPushBannerVisibility();
       updateUserDisplay();
       checkAndLoadUserOrder();
     }
 
+    
+    // --- WEB PUSH LOGIK (FIREBASE CLOUD MESSAGING) ---
+    const VAPID_KEY = "BADbKZlOzemF_u7GbV3lRgeE44ZLt9DTFUZEjieS1xjtcssaaWQp5CvrCmS_nHVgkzp3HQjU6E656cbqkh26-Yg";
+    const TOKENS_COL = "push_tokens";
+
+    function checkPushBannerVisibility() {
+      if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+      if (localStorage.getItem("fisch_push_dismissed") === "true") return;
+
+      if (Notification.permission === "default") {
+        const banner = document.getElementById("pushPromptBanner");
+        if (banner) banner.classList.remove("hidden");
+        lucide.createIcons();
+      }
+    }
+
+    function dismissPushBanner() {
+      localStorage.setItem("fisch_push_dismissed", "true");
+      const banner = document.getElementById("pushPromptBanner");
+      if (banner) banner.classList.add("hidden");
+    }
+
+    async function requestPushPermission() {
+      if (!('Notification' in window)) {
+        alert("Dieser Browser unterstützt leider keine Web-Push-Benachrichtigungen.");
+        return;
+      }
+
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          const banner = document.getElementById("pushPromptBanner");
+          if (banner) banner.classList.add("hidden");
+          await registerPushToken();
+          alert("🎉 Push-Benachrichtigungen erfolgreich aktiviert! Du wirst donnerstags vor Bestellschluss automatisch erinnert.");
+        } else if (permission === "denied") {
+          const banner = document.getElementById("pushPromptBanner");
+          if (banner) banner.classList.add("hidden");
+          alert("Benachrichtigungen wurden blockiert. Du kannst sie jederzeit in deinen Browser-Einstellungen aktivieren.");
+        }
+      } catch (err) {
+        console.error("Fehler bei Push-Berechtigung:", err);
+      }
+    }
+
+    async function registerPushToken() {
+      if (!window.messaging || !window.getToken) return;
+
+      try {
+        const swReg = await navigator.serviceWorker.ready;
+        const currentToken = await window.getToken(window.messaging, {
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: swReg
+        });
+
+        if (currentToken) {
+          console.log("FCM Token empfangen:", currentToken);
+          // In Firestore Sammlung push_tokens ablegen
+          if (window.db && window.setDoc && window.doc) {
+            const tokenDocRef = window.doc(window.db, TOKENS_COL, currentToken.substring(0, 40));
+            await window.setDoc(tokenDocRef, {
+              token: currentToken,
+              besteller: getFormattedUser() || "Unbekannt",
+              geraet: navigator.userAgent.substring(0, 100),
+              aktualisiertAm: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString()
+            }, { merge: true });
+          }
+        }
+      } catch (err) {
+        console.error("Fehler beim Abrufen des Push-Tokens:", err);
+      }
+    }
+
+    async function updateAdminPushCount() {
+      const countEl = document.getElementById("adminPushCount");
+      if (!countEl || !window.db || !window.getDocs || !window.collection) return;
+
+      try {
+        const snap = await window.getDocs(window.collection(window.db, TOKENS_COL));
+        countEl.textContent = `${snap.size} Geräte`;
+      } catch (err) {
+        countEl.textContent = "-";
+      }
+    }
+
+    // --- TERMIN STEUERUNG (FIREBASE & DEFAULT FREITAG) ---
+    let nextEventDateStr = ""; // z. B. "2026-09-18"
+    let nextEventDateFormatted = ""; // z. B. "Freitag, 18.09.2026"
+
     function getNextFridayDefault() {
       const d = new Date();
-      const day = d.getDay();
+      const day = d.getDay(); // 0 = So, 5 = Fr
       const diff = (5 - day + 7) % 7;
       d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
       return d.toISOString().split("T")[0];
@@ -977,6 +1124,7 @@
     }
 
     async function loadEventDate() {
+      // Default initialisieren
       nextEventDateStr = getNextFridayDefault();
       
       if (window.db && window.getDoc && window.doc) {
@@ -994,11 +1142,13 @@
       applyEventDateUI();
     }
 
+    
     function updateShopStatusBanner() {
       const banner = document.getElementById("shopStatusBanner");
       const dot = document.getElementById("statusDot");
       const text = document.getElementById("statusBannerText");
       const submitBtn = document.getElementById("btnSubmitOrder");
+      const openBtn = document.getElementById("btnOpenCart");
       const isOpen = isOrderWindowOpen();
 
       if (adminProxyTarget) {
@@ -1019,7 +1169,7 @@
         }
       } else {
         banner.className = "mb-3 bg-red-50 border border-red-200 text-red-900 rounded-xl p-3 flex items-center space-x-3 text-xs shadow-sm transition-colors duration-300";
-        dot.className = "w-2.5 h-2.5 rounded-full bg-red-600 flex-shrink-0 shadow-sm";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-red-600 flex-shrink-0 shadow-sm"; // Dauerhaft rot, kein Blinken!
         text.innerHTML = `Bestellfenster für <span class="font-black text-red-950">${nextEventDateFormatted || 'Freitag'}</span> <span class="font-bold uppercase tracking-wider bg-red-200/80 px-1.5 py-0.5 rounded text-[10px] text-red-800 ml-0.5">geschlossen</span> (wieder ab Mo 06:00 Uhr)`;
         if (submitBtn) {
           submitBtn.disabled = true;
@@ -1043,6 +1193,7 @@
       const adminInput = document.getElementById("adminDateInput");
       if (adminInput && nextEventDateStr) adminInput.value = nextEventDateStr;
       updateShopStatusBanner();
+      checkPushBannerVisibility();
     }
 
     async function saveEventDateFromAdmin() {
@@ -1069,13 +1220,17 @@
       }
     }
 
+    // --- USER ORDER TRACKING & EDITING ---
+    let myCurrentOrderDoc = null;
+
     function isOrderWindowOpen() {
       const now = new Date();
-      const day = now.getDay();
+      const day = now.getDay(); // 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa
       const hours = now.getHours();
       const minutes = now.getMinutes();
       const timeVal = hours + minutes / 60;
 
+      // Mo ab 06:00 bis Do 12:00
       if (day === 1 && timeVal >= 6) return true;
       if (day === 2 || day === 3) return true;
       if (day === 4 && timeVal < 12) return true;
@@ -1111,8 +1266,10 @@
           return;
         }
 
+        // Neueste aktive Bestellung nehmen
         myCurrentOrderDoc = docs[docs.length - 1];
 
+        // UI rendern
         const list = document.getElementById("userOrderItemsList");
         list.innerHTML = (myCurrentOrderDoc.artikel || []).map(a => `
           <div class="flex justify-between items-start">
@@ -1126,6 +1283,7 @@
 
         document.getElementById("userOrderTotal").textContent = formatEuro(myCurrentOrderDoc.gesamtpreis || 0);
 
+        // Prüfen ob Bestellfenster offen ist
         const isOpen = isOrderWindowOpen();
         const editBtn = document.getElementById("btnCancelOrEditOrder");
         const lockNotice = document.getElementById("orderLockNotice");
@@ -1156,6 +1314,7 @@
       if (!ok) return;
 
       try {
+        // Positionen in den Warenkorb laden
         cart = (myCurrentOrderDoc.artikel || []).map(a => ({
           id: Date.now() + Math.random(),
           dishName: a.speise,
@@ -1165,6 +1324,7 @@
           totalPrice: a.gesamt
         }));
 
+        // Aus Firestore löschen
         if (window.db && window.deleteDoc && window.doc) {
           await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, myCurrentOrderDoc.id));
         }
@@ -1180,6 +1340,7 @@
       }
     }
 
+    // --- CHECKOUT & FIREBASE SPEICHERUNG ---
     async function submitOrder() {
       const isClosed = !isOrderWindowOpen();
       const isAdmin = (sessionStorage.getItem("fisch_admin_authenticated") === "true") || !!adminProxyTarget;
@@ -1207,6 +1368,7 @@
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<span>Wird gespeichert...</span>`;
 
+      // In Firebase Cloud Firestore eintragen
       try {
         if (window.db && window.addDoc) {
           const orderDoc = {
@@ -1227,6 +1389,9 @@
           };
           
           await window.addDoc(window.collection(window.db, window.ORDERS_COL), orderDoc);
+          console.log("Erfolgreich in Firestore gespeichert!");
+        } else {
+          console.warn("Firestore noch nicht initialisiert, Offline-Modus.");
         }
       } catch (err) {
         console.error("Fehler beim Firestore-Speichern:", err);
@@ -1236,12 +1401,14 @@
         submitBtn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i><span>Verbindlich bestellen & zahlen</span>`;
       }
 
+      // Dialog wechseln zur Zahlungsseite
       toggleCartModal(false);
 
       const paymentModal = document.getElementById("paymentModal");
       document.getElementById("paymentModalSubtitle").textContent = `Bestellung für ${currentUser} erfolgreich gebucht!`;
       document.getElementById("paymentModalAmount").textContent = formatEuro(total);
       
+      // PayPal.Me Deep-Link
       const paypalMeUrl = `https://paypal.me/${PAYPAL_ME_NAME}/${totalFormatted}EUR`;
       document.getElementById("payPalDeepLink").href = paypalMeUrl;
 
@@ -1274,7 +1441,9 @@
       }
     }
 
+    // --- ADMIN MODAL & AUSWERTUNG (PIN-GESCHÜTZT) ---
     async function openAdminModal() {
+      // Immer PIN 9600 abfragen, unabhängig vom eingetragenen Namen
       if (!sessionStorage.getItem("fisch_admin_authenticated")) {
         const enteredPin = prompt("Admin-PIN eingeben:");
         if (enteredPin !== ADMIN_PIN) {
@@ -1288,31 +1457,29 @@
       document.getElementById("adminModal").classList.remove("hidden");
       lucide.createIcons();
       await refreshLiveOrders();
+      await updateAdminPushCount();
     }
 
     function closeAdminModal() {
       document.getElementById("adminModal").classList.add("hidden");
     }
 
-    async function switchAdminTab(tab) {
+    let archivedOrders = [];
+
+    function switchAdminTab(tab) {
       currentAdminTab = tab;
       const aggBtn = document.getElementById("tabAggBtn");
       const usersBtn = document.getElementById("tabUsersBtn");
       const histBtn = document.getElementById("tabHistoryBtn");
 
-      const activeClass = "flex-1 py-2.5 px-2 text-center rounded-xl bg-blue-900 text-white font-black shadow-md transition flex items-center justify-center space-x-1";
-      const inactiveClass = "flex-1 py-2.5 px-2 text-center rounded-xl bg-white text-slate-700 font-bold hover:bg-slate-50 transition flex items-center justify-center space-x-1";
+      const activeClass = "flex-1 py-2 px-1 text-center rounded-xl bg-blue-900 text-white font-black shadow-md transition flex items-center justify-center space-x-1";
+      const inactiveClass = "flex-1 py-2 px-1 text-center rounded-xl bg-white/70 text-slate-700 font-bold hover:bg-white transition flex items-center justify-center space-x-1";
 
       if (aggBtn) aggBtn.className = (tab === "agg") ? activeClass : inactiveClass;
       if (usersBtn) usersBtn.className = (tab === "users") ? activeClass : inactiveClass;
       if (histBtn) histBtn.className = (tab === "history") ? activeClass : inactiveClass;
 
-      // Wenn auf Archiv gewechselt wird, frische Daten aus Firestore erzwingen
-      if (tab === "history") {
-        await refreshLiveOrders();
-      } else {
-        renderAdminContent();
-      }
+      renderAdminContent();
       lucide.createIcons();
     }
 
@@ -1320,9 +1487,7 @@
       if (!window.db || !window.getDocs) return;
       
       const content = document.getElementById("adminTabContent");
-      if (content && (!liveOrders.length && !archivedOrders.length)) {
-        content.innerHTML = `<p class="text-center text-slate-400 py-6">Lade Daten aus Firebase...</p>`;
-      }
+      content.innerHTML = `<p class="text-center text-slate-400 py-6">Lade Bestellungen aus Firebase...</p>`;
 
       try {
         const snap = await window.getDocs(window.collection(window.db, window.ORDERS_COL));
@@ -1331,7 +1496,6 @@
 
         snap.forEach(d => {
           const ord = { id: d.id, ...d.data() };
-          // Eindeutige Zuweisung zu Archiv oder Aktiv
           if (ord.archiviert === true) {
             archivedOrders.push(ord);
           } else {
@@ -1343,9 +1507,7 @@
         renderAdminContent();
       } catch (err) {
         console.error("Fehler beim Laden:", err);
-        if (content) {
-          content.innerHTML = `<p class="text-center text-red-500 py-4">Fehler beim Laden aus Firebase. Bitte Berechtigungen prüfen.</p>`;
-        }
+        content.innerHTML = `<p class="text-center text-red-500 py-4">Fehler beim Laden aus Firebase. Bitte Berechtigungen prüfen.</p>`;
       }
     }
 
@@ -1372,9 +1534,7 @@
         }
       });
 
-      const totalOrdersEl = document.getElementById("adminTotalOrders");
-      if (totalOrdersEl) totalOrdersEl.textContent = totalOrders;
-
+      document.getElementById("adminTotalOrders").textContent = totalOrders;
       const paidSummaryEl = document.getElementById("adminPaidSummary");
       if (paidSummaryEl) paidSummaryEl.textContent = `${paidOrders} / ${totalOrders}`;
 
@@ -1386,14 +1546,14 @@
 
     function renderAdminContent() {
       const content = document.getElementById("adminTabContent");
-      if (!content) return;
+      
+      if (liveOrders.length === 0) {
+        content.innerHTML = `<p class="text-center text-slate-400 py-8">Bislang noch keine Bestellungen in der Cloud vorhanden.</p>`;
+        return;
+      }
 
       if (currentAdminTab === "agg") {
-        if (liveOrders.length === 0) {
-          content.innerHTML = `<p class="text-center text-slate-400 py-8">Aktuell keine offenen Bestellungen vorhanden.</p>`;
-          return;
-        }
-
+        // Aggregation nach Speise mit Varianten
         const dishesMap = {};
         liveOrders.forEach(o => {
           (o.artikel || []).forEach(a => {
@@ -1424,13 +1584,13 @@
               const item = dishesMap[dName];
               const varKeys = Object.keys(item.variants);
               const variantText = varKeys.length > 0 
-                ? varKeys.map(vk => `${item.variants[vk]}x${vk}`).join(", ") 
+                ? varKeys.map(vk => `${item.variants[vk]}x ${vk}`).join(", ") 
                 : "Standard";
 
               return `
                 <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                   <div>
-                    <span class="font-extrabold text-slate-900 text-sm">${item.total}x${dName}</span>
+                    <span class="font-extrabold text-slate-900 text-sm">${item.total}x ${dName}</span>
                     <p class="text-[11px] text-slate-500 font-medium">${variantText}</p>
                   </div>
                   <span class="font-black text-slate-800">${formatEuro(item.summe)}</span>
@@ -1440,11 +1600,7 @@
           </div>
         `;
       } else if (currentAdminTab === "users") {
-        if (liveOrders.length === 0) {
-          content.innerHTML = `<p class="text-center text-slate-400 py-8">Aktuell keine offenen Bestellungen vorhanden.</p>`;
-          return;
-        }
-
+        // Auflistung nach Besteller mit Abhaken der Zahlung
         content.innerHTML = `
           <div class="space-y-2.5">
             ${liveOrders.map(o => {
@@ -1458,7 +1614,8 @@
                     </div>
 
                     <div class="flex items-center space-x-1.5">
-                      <button type="button" onclick="togglePaymentStatus('${o.id}',${!isPaid})" 
+                      <!-- Bezahl-Häkchen Button -->
+                      <button type="button" onclick="togglePaymentStatus('${o.id}', ${!isPaid})" 
                         class="px-2.5 py-1 rounded-xl text-xs font-black flex items-center space-x-1.5 transition active:scale-95 ${
                           isPaid 
                             ? 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700' 
@@ -1468,6 +1625,7 @@
                         <span>${isPaid ? 'Bezahlt ✓' : 'Offen'}</span>
                       </button>
 
+                      <!-- Einzelne Bestellung löschen (z.B. Test- / Falschbestellung) -->
                       <button type="button" onclick="deleteSingleOrder('${o.id}', '${o.besteller.replace(/'/g, "\\'")}', '${formatEuro(o.gesamtpreis || 0)}')" 
                         class="p-1.5 rounded-xl text-red-500 hover:bg-red-100 hover:text-red-700 transition active:scale-90" title="Diese Bestellung löschen">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -1492,27 +1650,24 @@
           </div>
         `;
         lucide.createIcons();
-      } else if (currentAdminTab === "history") {
-        if (!archivedOrders || archivedOrders.length === 0) {
+            } else if (currentAdminTab === "history") {
+        // HISTORIE / ARCHIV TAB
+        if (archivedOrders.length === 0) {
           content.innerHTML = `
             <div class="text-center py-8 text-slate-400 space-y-2">
               <i data-lucide="archive" class="w-10 h-10 mx-auto opacity-30"></i>
-              <p class="font-semibold text-xs">Das Archiv ist aktuell leer.</p>
-              <p class="text-[11px] text-slate-400">Bestellungen wandern hierhin, sobald am Freitag "Woche abschließen" geklickt wird.</p>
+              <p class="font-semibold text-xs">Das Archiv ist aktuell noch leer.</p>
+              <p class="text-[11px] text-slate-400">Bestellungen wandern hierhin, sobald du am Freitag "Woche abschließen" klickst.</p>
             </div>
           `;
           lucide.createIcons();
           return;
         }
 
+        // Gruppierung nach TerminDatum
         const byTermin = {};
         archivedOrders.forEach(o => {
-          let tKey = o.terminDatum;
-          if (!tKey && o.archiviertAm) {
-            tKey = "Archiviert am " + new Date(o.archiviertAm).toLocaleDateString('de-DE');
-          } else if (!tKey) {
-            tKey = "Frühere Bestellungen";
-          }
+          const tKey = o.terminDatum || (o.erstelltAm ? new Date(o.erstelltAm).toLocaleDateString('de-DE') : "Vergangener Termin");
           if (!byTermin[tKey]) byTermin[tKey] = [];
           byTermin[tKey].push(o);
         });
@@ -1521,7 +1676,7 @@
 
         content.innerHTML = `
           <div class="space-y-4">
-            ${sortedTermine.map(tName => {
+            ${sortedTermine.map((tName, idx) => {
               const termOrders = byTermin[tName];
               const tCount = termOrders.length;
               const tSum = termOrders.reduce((s, o) => s + (Number(o.gesamtpreis) || 0), 0);
@@ -1560,16 +1715,20 @@
       }
     }
 
+
+    // --- BEZAHLSTATUS TOGGLE DURCH ADMIN ---
     async function togglePaymentStatus(orderId, newStatus) {
       if (!window.db || !window.updateDoc || !window.doc) return;
 
       try {
+        // Lokalen State sofort anpassen für flüssige UI
         const ord = liveOrders.find(o => o.id === orderId);
         if (ord) ord.bezahlt = newStatus;
 
         calculateAdminStats();
         renderAdminContent();
 
+        // In Firestore speichern
         const docRef = window.doc(window.db, window.ORDERS_COL, orderId);
         await window.updateDoc(docRef, {
           bezahlt: newStatus,
@@ -1579,15 +1738,19 @@
         console.error("Fehler beim Aktualisieren des Bezahlstatus:", err);
         alert("Konnte Bezahlstatus nicht speichern: " + err.message);
         await refreshLiveOrders();
+      await updateAdminPushCount();
       }
     }
 
+    // --- WHATSAPP EXPORT FÜR DEN FISCHMANN (GRUPPIERT NACH SPEISE) ---
     function sendWhatsAppToVendor() {
       if (liveOrders.length === 0) {
         alert("Keine Bestellungen zur Übertragung vorhanden.");
         return;
       }
 
+      // Gruppierung nach Hauptspeise, darunter nach Varianten
+      // dishesMap: { "Saftlachsbrötchen": { total: 6, variants: { "Honig-Senf | mit Salat": 3, "Remo | mit Salat": 3 } } }
       const dishesMap = {};
       let totalPieces = 0;
       let grandTotal = 0;
@@ -1617,6 +1780,7 @@
       let text = `🐟 *Fridays for Fischbrötchen - Bestellung* 🐟\n\n`;
       text += `Moin! Hier ist unsere Gesamtbestellung für *${dateHeading}*:\n\n`;
 
+      // Alphabetisch sortiert ausgeben (Varianten untereinander)
       Object.keys(dishesMap).sort().forEach(dishName => {
         const item = dishesMap[dishName];
         const varKeys = Object.keys(item.variants).sort();
@@ -1637,6 +1801,8 @@
       window.open(waUrl, "_blank");
     }
 
+    
+    // --- EINZELNE BESTELLUNG LÖSCHEN (DURCH ADMIN) ---
     async function deleteSingleOrder(orderId, bestellerName, betragStr) {
       const ok = confirm(`Möchtest du diese Bestellung von "${bestellerName}" (${betragStr}) wirklich unwiderruflich löschen?`);
       if (!ok) return;
@@ -1645,6 +1811,8 @@
 
       try {
         await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, orderId));
+        
+        // Aus lokalem Cache entfernen
         liveOrders = liveOrders.filter(o => o.id !== orderId);
         
         calculateAdminStats();
@@ -1657,6 +1825,8 @@
       }
     }
 
+    
+    // --- ARCHIVIERUNG DER AKTUELLEN WOCHE (STATT HARTEM LÖSCHEN) ---
     async function archiveCurrentOrders() {
       if (liveOrders.length === 0) {
         alert("Es liegen aktuell keine offenen Bestellungen der Woche vor.");
@@ -1680,8 +1850,9 @@
           });
         }
 
-        alert("Bestellungen wurden erfolgreich ins Archiv verschoben!");
+        alert("Bestellungen wurden erfolgreich ins Archiv verschoben! Die App ist bereit für die nächste Woche.");
         await refreshLiveOrders();
+      await updateAdminPushCount();
         checkAndLoadUserOrder();
       } catch (err) {
         console.error("Fehler beim Archivieren:", err);
@@ -1689,10 +1860,37 @@
       }
     }
 
+    // --- ALTE RESET FUNKTION ERSETZT ---
+    async function confirmResetAllOrders() {
+      const sicher = confirm("Möchtest du wirklich ALLE Bestellungen aus der Cloud löschen (z. B. nach dem Freitags-Essen)?");
+      if (!sicher) return;
+
+      const code = prompt("Tippe 'LEEREN' zur Bestätigung:");
+      if (code !== "LEEREN") {
+        alert("Abgebrochen.");
+        return;
+      }
+
+      if (!window.db || !window.deleteDoc || !window.doc) return;
+
+      try {
+        for (const ord of liveOrders) {
+          await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, ord.id));
+        }
+        alert("Alle Bestellungen in der Cloud wurden erfolgreich zurückgesetzt!");
+        await refreshLiveOrders();
+      await updateAdminPushCount();
+      } catch (err) {
+        console.error("Fehler beim Löschen:", err);
+        alert("Fehler beim Löschen der Datensätze.");
+      }
+    }
+
     function formatEuro(val) {
       return (Number(val) || 0).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
     }
 
+    // Globale Zuordnungen
     window.handleAdminTrigger = handleAdminTrigger;
     window.openAdminModal = openAdminModal;
     window.closeAdminModal = closeAdminModal;
@@ -1723,6 +1921,9 @@
     window.closeAdminProxyModal = closeAdminProxyModal;
     window.confirmAdminProxyOrder = confirmAdminProxyOrder;
     window.exitAdminProxyOrder = exitAdminProxyOrder;
+    window.requestPushPermission = requestPushPermission;
+    window.dismissPushBanner = dismissPushBanner;
+    window.registerPushToken = registerPushToken;
   </script>
 </body>
 </html>
