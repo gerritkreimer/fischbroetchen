@@ -1,0 +1,33 @@
+name: Donnerstags-Erinnerung (Schlussglocke)
+
+on:
+  schedule:
+    # 09:00 UTC entspricht 11:00 Uhr MESZ (Sommerzeit) bzw. 10:00 Uhr MEZ
+    # Jeden Donnerstag (4) um 09:00 UTC:
+    - cron: '0 9 * * 4'
+  workflow_dispatch: # Erlaubt manuelles Testen per Knopfdruck
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: E-Mail Erinnerung senden
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "🔔 Letzte Chance: Schlussglocke für Fischbrötchen läuten!"
+          to: gerrit.kreimer@googlemail.com
+          from: "Fridays for Fischbrötchen <${{ secrets.MAIL_USERNAME }}>"
+          body: |
+            Moin Gerrit,
+
+            es ist Donnerstag, 11:00 Uhr! In 60 Minuten (12:00 Uhr) schließt das reguläre Bestellfenster für den Fischbrötchen-Freitag.
+
+            Erinnere kurz deine Spezis in der WhatsApp-Gruppe:
+            "🔔 Letzter Aufruf: Noch 1 Stunde bis Bestellschluss!"
+
+            App: https://gerritkreimer.github.io/Fischbroetchen/
