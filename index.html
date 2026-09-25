@@ -1294,7 +1294,7 @@
       document.getElementById("adminModal").classList.add("hidden");
     }
 
-    function switchAdminTab(tab) {
+    async function switchAdminTab(tab) {
       currentAdminTab = tab;
       const aggBtn = document.getElementById("tabAggBtn");
       const usersBtn = document.getElementById("tabUsersBtn");
@@ -1307,7 +1307,12 @@
       if (usersBtn) usersBtn.className = (tab === "users") ? activeClass : inactiveClass;
       if (histBtn) histBtn.className = (tab === "history") ? activeClass : inactiveClass;
 
-      renderAdminContent();
+      // Wenn auf Archiv gewechselt wird, frische Daten aus Firestore erzwingen
+      if (tab === "history") {
+        await refreshLiveOrders();
+      } else {
+        renderAdminContent();
+      }
       lucide.createIcons();
     }
 
@@ -1315,7 +1320,9 @@
       if (!window.db || !window.getDocs) return;
       
       const content = document.getElementById("adminTabContent");
-      content.innerHTML = `<p class="text-center text-slate-400 py-6">Lade Bestellungen aus Firebase...</p>`;
+      if (content && (!liveOrders.length && !archivedOrders.length)) {
+        content.innerHTML = `<p class="text-center text-slate-400 py-6">Lade Daten aus Firebase...</p>`;
+      }
 
       try {
         const snap = await window.getDocs(window.collection(window.db, window.ORDERS_COL));
@@ -1324,6 +1331,7 @@
 
         snap.forEach(d => {
           const ord = { id: d.id, ...d.data() };
+          // Eindeutige Zuweisung zu Archiv oder Aktiv
           if (ord.archiviert === true) {
             archivedOrders.push(ord);
           } else {
@@ -1335,7 +1343,9 @@
         renderAdminContent();
       } catch (err) {
         console.error("Fehler beim Laden:", err);
-        content.innerHTML = `<p class="text-center text-red-500 py-4">Fehler beim Laden aus Firebase. Bitte Berechtigungen prüfen.</p>`;
+        if (content) {
+          content.innerHTML = `<p class="text-center text-red-500 py-4">Fehler beim Laden aus Firebase. Bitte Berechtigungen prüfen.</p>`;
+        }
       }
     }
 
@@ -1362,7 +1372,9 @@
         }
       });
 
-      document.getElementById("adminTotalOrders").textContent = totalOrders;
+      const totalOrdersEl = document.getElementById("adminTotalOrders");
+      if (totalOrdersEl) totalOrdersEl.textContent = totalOrders;
+
       const paidSummaryEl = document.getElementById("adminPaidSummary");
       if (paidSummaryEl) paidSummaryEl.textContent = `${paidOrders} / ${totalOrders}`;
 
@@ -1374,13 +1386,14 @@
 
     function renderAdminContent() {
       const content = document.getElementById("adminTabContent");
-      
-      if (liveOrders.length === 0) {
-        content.innerHTML = `<p class="text-center text-slate-400 py-8">Bislang noch keine Bestellungen in der Cloud vorhanden.</p>`;
-        return;
-      }
+      if (!content) return;
 
       if (currentAdminTab === "agg") {
+        if (liveOrders.length === 0) {
+          content.innerHTML = `<p class="text-center text-slate-400 py-8">Aktuell keine offenen Bestellungen vorhanden.</p>`;
+          return;
+        }
+
         const dishesMap = {};
         liveOrders.forEach(o => {
           (o.artikel || []).forEach(a => {
@@ -1427,6 +1440,11 @@
           </div>
         `;
       } else if (currentAdminTab === "users") {
+        if (liveOrders.length === 0) {
+          content.innerHTML = `<p class="text-center text-slate-400 py-8">Aktuell keine offenen Bestellungen vorhanden.</p>`;
+          return;
+        }
+
         content.innerHTML = `
           <div class="space-y-2.5">
             ${liveOrders.map(o => {
@@ -1475,12 +1493,12 @@
         `;
         lucide.createIcons();
       } else if (currentAdminTab === "history") {
-        if (archivedOrders.length === 0) {
+        if (!archivedOrders || archivedOrders.length === 0) {
           content.innerHTML = `
             <div class="text-center py-8 text-slate-400 space-y-2">
               <i data-lucide="archive" class="w-10 h-10 mx-auto opacity-30"></i>
-              <p class="font-semibold text-xs">Das Archiv ist aktuell noch leer.</p>
-              <p class="text-[11px] text-slate-400">Bestellungen wandern hierhin, sobald du am Freitag "Woche abschließen" klickst.</p>
+              <p class="font-semibold text-xs">Das Archiv ist aktuell leer.</p>
+              <p class="text-[11px] text-slate-400">Bestellungen wandern hierhin, sobald am Freitag "Woche abschließen" geklickt wird.</p>
             </div>
           `;
           lucide.createIcons();
@@ -1489,7 +1507,12 @@
 
         const byTermin = {};
         archivedOrders.forEach(o => {
-          const tKey = o.terminDatum || (o.erstelltAm ? new Date(o.erstelltAm).toLocaleDateString('de-DE') : "Vergangener Termin");
+          let tKey = o.terminDatum;
+          if (!tKey && o.archiviertAm) {
+            tKey = "Archiviert am " + new Date(o.archiviertAm).toLocaleDateString('de-DE');
+          } else if (!tKey) {
+            tKey = "Frühere Bestellungen";
+          }
           if (!byTermin[tKey]) byTermin[tKey] = [];
           byTermin[tKey].push(o);
         });
@@ -1498,7 +1521,7 @@
 
         content.innerHTML = `
           <div class="space-y-4">
-            ${sortedTermine.map((tName, idx) => {
+            ${sortedTermine.map(tName => {
               const termOrders = byTermin[tName];
               const tCount = termOrders.length;
               const tSum = termOrders.reduce((s, o) => s + (Number(o.gesamtpreis) || 0), 0);
@@ -1657,7 +1680,7 @@
           });
         }
 
-        alert("Bestellungen wurden erfolgreich ins Archiv verschoben! Die App ist bereit für die nächste Woche.");
+        alert("Bestellungen wurden erfolgreich ins Archiv verschoben!");
         await refreshLiveOrders();
         checkAndLoadUserOrder();
       } catch (err) {
