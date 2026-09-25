@@ -2,16 +2,40 @@ name: Donnerstags-Erinnerung (Schlussglocke)
 
 on:
   schedule:
-    # 09:00 UTC entspricht 11:00 Uhr MESZ (Sommerzeit) bzw. 10:00 Uhr MEZ
-    # Jeden Donnerstag (4) um 09:00 UTC:
+    # Jeden Donnerstag um 09:00 UTC (11:00 Uhr MESZ)
     - cron: '0 9 * * 4'
-  workflow_dispatch: # Erlaubt manuelles Testen per Knopfdruck
+  workflow_dispatch: # Erlaubt manuelles Testen
 
 jobs:
-  send-reminder:
+  check-and-send:
     runs-on: ubuntu-latest
     steps:
+      - name: Prüfen, ob Termin für morgen aktiv ist
+        id: check_status
+        run: |
+          # Berechne das Datum von morgen (Freitag) im Format YYYY-MM-DD
+          TOMORROW=$(date -d "+1 day" +%Y-%m-%d)
+          echo "Morgiger Freitag: $TOMORROW"
+
+          # Lade den eingestellten Termin direkt aus der Firestore REST-API
+          FIREBASE_URL="https://firestore.googleapis.com/v1/projects/fischbroetchen-65239/databases/(default)/documents/einstellungen/termin"
+          RESPONSE=$(curl -s "$FIREBASE_URL")
+
+          # Extrahiere das gespeicherte Datum
+          SAVED_DATE=$(echo "$RESPONSE" | grep -oP '"datum":\s*\{\s*"stringValue":\s*"\K[^"]+')
+          echo "In Firebase gespeicherter Termin: $SAVED_DATE"
+
+          # Nur fortfahren, wenn der gespeicherte Termin exakt auf morgen fällt
+          if [ "$SAVED_DATE" = "$TOMORROW" ]; then
+            echo "shop_open=true" >> $GITHUB_OUTPUT
+            echo "Termin ist aktiv. E-Mail wird versendet."
+          else
+            echo "shop_open=false" >> $GITHUB_OUTPUT
+            echo "Kein Fisch-Freitag für morgen hinterlegt. Mail wird übersprungen."
+          fi
+
       - name: E-Mail Erinnerung senden
+        if: steps.check_status.outputs.shop_open == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -30,4 +54,4 @@ jobs:
             Erinnere kurz deine Spezis in der WhatsApp-Gruppe:
             "🔔 Letzter Aufruf: Noch 1 Stunde bis Bestellschluss!"
 
-            App: https://gerritkreimer.github.io/Fischbroetchen/
+            App: https://gerritkreimer.github.io/fischbroetchen/
