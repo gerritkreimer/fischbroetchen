@@ -72,7 +72,9 @@
     <!-- Status Banner: Dynamische Ampel (Grün pulsierend / Rot dauerhaft) -->
     <div id="shopStatusBanner" class="mb-3 rounded-xl p-3 flex items-center space-x-3 text-xs shadow-sm transition-colors duration-300">
       <div id="statusDot" class="w-2.5 h-2.5 rounded-full flex-shrink-0"></div>
-      <div id="statusBannerText" class="flex-1 font-medium"></div>
+      <div id="statusBannerText" class="flex-1 font-medium">
+        <!-- Dynamisch per JS -->
+      </div>
     </div>
 
     <!-- Meine aktuelle Bestellung Card (Erscheint nur wenn Bestellung in Firebase vorliegt) -->
@@ -85,7 +87,9 @@
         <span id="userOrderStatusBadge" class="text-[10px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Gebucht</span>
       </div>
 
-      <div id="userOrderItemsList" class="py-2.5 space-y-1.5 text-xs"></div>
+      <div id="userOrderItemsList" class="py-2.5 space-y-1.5 text-xs">
+        <!-- Dynamisch befüllt -->
+      </div>
 
       <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
         <div>
@@ -101,10 +105,14 @@
     </div>
 
     <!-- Kategorien Tabs -->
-    <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-2 pt-1" id="categoryBar"></div>
+    <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-2 pt-1" id="categoryBar">
+      <!-- Dynamisch per JS -->
+    </div>
 
     <!-- Speisen Liste -->
-    <div class="space-y-2.5 mt-2" id="dishesList"></div>
+    <div class="space-y-2.5 mt-2" id="dishesList">
+      <!-- Dynamisch per JS -->
+    </div>
 
   </main>
 
@@ -469,7 +477,9 @@
       </div>
 
       <!-- Tab Content: Scrollbar -->
-      <div class="overflow-y-auto py-3 flex-1 min-h-0 text-xs space-y-2" id="adminTabContent"></div>
+      <div class="overflow-y-auto py-3 flex-1 min-h-0 text-xs space-y-2" id="adminTabContent">
+        <!-- Dynamisch -->
+      </div>
 
       <!-- Admin Footer Aktionen -->
       <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs shrink-0">
@@ -510,7 +520,7 @@
       isSupported
     } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-messaging.js";
 
-    // Echte Firebase-Keys
+    // Deine echten Firebase-Keys
     const firebaseConfig = {
       apiKey: "AIzaSyBcoYOQDqx9Coj5cbJfhbUMMPd-Qy0T06I",
       authDomain: "fischbroetchen-65239.firebaseapp.com",
@@ -524,7 +534,7 @@
     const db = getFirestore(app);
     const ORDERS_COL = "bestellungen";
 
-    // Globale Referenzen
+    // Globale Referenzen für Modul -> Window
     window.db = db;
     window.ORDERS_COL = ORDERS_COL;
     window.addDoc = addDoc;
@@ -562,7 +572,7 @@
     const ADMIN_PIN = "9600";
 
     function isMiesmuschelSeason() {
-      const month = new Date().getMonth();
+      const month = new Date().getMonth(); // 0 = Jan ... 3 = Apr, 8 = Sep ... 11 = Dez
       return month >= 8 || month <= 3;
     }
 
@@ -603,10 +613,10 @@
     let cart = [];
 
     // Admin State
+    let isAdminUnlocked = false; localStorage.removeItem("fisch_is_admin");
+    let adminClickCount = 0;
     let liveOrders = [];
-    let archivedOrders = [];
     let currentAdminTab = "agg";
-    let isAdminHeaderCollapsed = false;
 
     // Konfigurator State
     let currentDish = null;
@@ -629,14 +639,15 @@
     });
 
     window.addEventListener("firebase-ready", () => {
-      if (sessionStorage.getItem("fisch_admin_authenticated") === "true") {
+      console.log("Firebase Firestore verbunden!");
+      if (isAdminUnlocked) {
         refreshLiveOrders();
       }
       checkAndLoadUserOrder();
       loadEventDate();
     });
 
-    // --- NUTZER-VERWALTUNG ---
+    // --- NUTZER-VERWALTUNG (GETRENNT NACH VOR- & NACHNAME) ---
     function getFormattedUser() {
       if (userLastName && userFirstName) {
         return `${userLastName}, ${userFirstName}`;
@@ -686,7 +697,9 @@
       document.getElementById("cartUserName").textContent = fullName || "Unbekannt";
     }
 
+    // --- ADMIN STEUERUNG (REIN ÜBER PIN 9600) ---
     function checkAdminStatus() {
+      // Keine automatische Freischaltung über Benutzernamen mehr!
       if (sessionStorage.getItem("fisch_admin_authenticated") === "true") {
         document.getElementById("adminBadge").classList.remove("hidden");
       }
@@ -696,6 +709,7 @@
       openAdminModal();
     }
 
+    // --- KATEGORIEN & SPEISEN RENDERN ---
     function renderCategories() {
       const bar = document.getElementById("categoryBar");
       const cats = ["Alle", "Fischbrötchen", "Fischvariationen", "Heiß & Fettig", "Muscheln", "Beilagen"];
@@ -766,6 +780,7 @@
       lucide.createIcons();
     }
 
+    // --- KONFIGURATOR MODAL ---
     function openConfigModal(dishId) {
       currentDish = DISHES.find(d => d.id === dishId);
       if (!currentDish || !currentDish.available) return;
@@ -979,7 +994,10 @@
       lucide.createIcons();
     }
 
-    // --- ADMIN SONDERBUCHUNG ---
+
+
+    
+    // --- ADMIN SONDERBUCHUNG FÜR KOLLEGEN (AUCH BEI GESCHLOSSENEM SHOP) ---
     let adminProxyTarget = null;
 
     function startAdminOrderForColleague() {
@@ -1007,9 +1025,11 @@
       adminProxyTarget = formatted;
       closeAdminProxyModal();
 
+      // Banner einblenden
       document.getElementById("adminProxyNameDisplay").textContent = adminProxyTarget;
       document.getElementById("adminProxyBanner").classList.remove("hidden");
 
+      // Warenkorb leeren für neue Buchung
       cart = [];
       updateCartUI();
       updateShopStatusBanner();
@@ -1030,7 +1050,8 @@
       checkAndLoadUserOrder();
     }
 
-    // --- WEB PUSH LOGIK ---
+    
+    // --- WEB PUSH LOGIK (FIREBASE CLOUD MESSAGING) ---
     const VAPID_KEY = "BADbKZlOzemF_u7GbV3lRgeE44ZLt9DTFUZEjieS1xjtcssaaWQp5CvrCmS_nHVgkzp3HQjU6E656cbqkh26-Yg";
     const TOKENS_COL = "push_tokens";
 
@@ -1085,6 +1106,8 @@
         });
 
         if (currentToken) {
+          console.log("FCM Token empfangen:", currentToken);
+          // In Firestore Sammlung push_tokens ablegen
           if (window.db && window.setDoc && window.doc) {
             const tokenDocRef = window.doc(window.db, TOKENS_COL, currentToken.substring(0, 40));
             await window.setDoc(tokenDocRef, {
@@ -1112,13 +1135,13 @@
       }
     }
 
-    // --- TERMIN STEUERUNG ---
-    let nextEventDateStr = "";
-    let nextEventDateFormatted = "";
+    // --- TERMIN STEUERUNG (FIREBASE & DEFAULT FREITAG) ---
+    let nextEventDateStr = ""; // z. B. "2026-09-18"
+    let nextEventDateFormatted = ""; // z. B. "Freitag, 18.09.2026"
 
     function getNextFridayDefault() {
       const d = new Date();
-      const day = d.getDay();
+      const day = d.getDay(); // 0 = So, 5 = Fr
       const diff = (5 - day + 7) % 7;
       d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
       return d.toISOString().split("T")[0];
@@ -1133,17 +1156,34 @@
       return d.toLocaleDateString('de-DE', options);
     }
 
-    // Ermittelt verlässlich den Freitag einer bestimmten Datumsangabe
+    function parseAnyDate(val) {
+      if (!val) return null;
+      if (typeof val.toDate === 'function') return val.toDate();
+      if (val.seconds) return new Date(val.seconds * 1000);
+      if (typeof val._seconds === 'number') return new Date(val._seconds * 1000);
+      const d = new Date(val);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
     function getAssociatedFriday(dateInput) {
-      let d = new Date(dateInput);
-      if (isNaN(d.getTime())) return null;
-      const day = d.getDay(); // 0=So ... 5=Fr
-      const diffToFriday = (5 - day);
-      d.setDate(d.getDate() + diffToFriday);
-      return formatGermanDate(d.toISOString().split("T")[0]);
+      const d = parseAnyDate(dateInput);
+      if (!d) return null;
+      const day = d.getDay(); // 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa
+      let diffToFriday = 0;
+      if (day <= 5 && day > 0) {
+        diffToFriday = 5 - day; // Mo->+4, Di->+3, Mi->+2, Do->+1, Fr->0
+      } else if (day === 6) {
+        diffToFriday = -1; // Sa gehört zum gestrigen Fr
+      } else if (day === 0) {
+        diffToFriday = -2; // So gehört zum Fr vor 2 Tagen
+      }
+      const target = new Date(d);
+      target.setDate(d.getDate() + diffToFriday);
+      return formatGermanDate(target.toISOString().split("T")[0]);
     }
 
     async function loadEventDate() {
+      // Default initialisieren
       nextEventDateStr = getNextFridayDefault();
       
       if (window.db && window.getDoc && window.doc) {
@@ -1161,11 +1201,13 @@
       applyEventDateUI();
     }
 
+    
     function updateShopStatusBanner() {
       const banner = document.getElementById("shopStatusBanner");
       const dot = document.getElementById("statusDot");
       const text = document.getElementById("statusBannerText");
       const submitBtn = document.getElementById("btnSubmitOrder");
+      const openBtn = document.getElementById("btnOpenCart");
       const isOpen = isOrderWindowOpen();
 
       if (adminProxyTarget) {
@@ -1186,7 +1228,7 @@
         }
       } else {
         banner.className = "mb-3 bg-red-50 border border-red-200 text-red-900 rounded-xl p-3 flex items-center space-x-3 text-xs shadow-sm transition-colors duration-300";
-        dot.className = "w-2.5 h-2.5 rounded-full bg-red-600 flex-shrink-0 shadow-sm";
+        dot.className = "w-2.5 h-2.5 rounded-full bg-red-600 flex-shrink-0 shadow-sm"; // Dauerhaft rot, kein Blinken!
         text.innerHTML = `Bestellfenster für <span class="font-black text-red-950">${nextEventDateFormatted || 'Freitag'}</span> <span class="font-bold uppercase tracking-wider bg-red-200/80 px-1.5 py-0.5 rounded text-[10px] text-red-800 ml-0.5">geschlossen</span> (wieder ab Mo 06:00 Uhr)`;
         if (submitBtn) {
           submitBtn.disabled = true;
@@ -1237,20 +1279,22 @@
       }
     }
 
+    // --- USER ORDER TRACKING & EDITING ---
+    let myCurrentOrderDoc = null;
+
     function isOrderWindowOpen() {
       const now = new Date();
-      const day = now.getDay();
+      const day = now.getDay(); // 0=So, 1=Mo, 2=Di, 3=Mi, 4=Do, 5=Fr, 6=Sa
       const hours = now.getHours();
       const minutes = now.getMinutes();
       const timeVal = hours + minutes / 60;
 
+      // Mo ab 06:00 bis Do 12:00
       if (day === 1 && timeVal >= 6) return true;
       if (day === 2 || day === 3) return true;
       if (day === 4 && timeVal < 12) return true;
       return false;
     }
-
-    let myCurrentOrderDoc = null;
 
     async function checkAndLoadUserOrder() {
       const currentUser = getFormattedUser();
@@ -1281,8 +1325,10 @@
           return;
         }
 
+        // Neueste aktive Bestellung nehmen
         myCurrentOrderDoc = docs[docs.length - 1];
 
+        // UI rendern
         const list = document.getElementById("userOrderItemsList");
         list.innerHTML = (myCurrentOrderDoc.artikel || []).map(a => `
           <div class="flex justify-between items-start">
@@ -1296,6 +1342,7 @@
 
         document.getElementById("userOrderTotal").textContent = formatEuro(myCurrentOrderDoc.gesamtpreis || 0);
 
+        // Prüfen ob Bestellfenster offen ist
         const isOpen = isOrderWindowOpen();
         const editBtn = document.getElementById("btnCancelOrEditOrder");
         const lockNotice = document.getElementById("orderLockNotice");
@@ -1326,6 +1373,7 @@
       if (!ok) return;
 
       try {
+        // Positionen in den Warenkorb laden
         cart = (myCurrentOrderDoc.artikel || []).map(a => ({
           id: Date.now() + Math.random(),
           dishName: a.speise,
@@ -1335,6 +1383,7 @@
           totalPrice: a.gesamt
         }));
 
+        // Aus Firestore löschen
         if (window.db && window.deleteDoc && window.doc) {
           await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, myCurrentOrderDoc.id));
         }
@@ -1350,6 +1399,7 @@
       }
     }
 
+    // --- CHECKOUT & FIREBASE SPEICHERUNG ---
     async function submitOrder() {
       const isClosed = !isOrderWindowOpen();
       const isAdmin = (sessionStorage.getItem("fisch_admin_authenticated") === "true") || !!adminProxyTarget;
@@ -1377,6 +1427,7 @@
       submitBtn.disabled = true;
       submitBtn.innerHTML = `<span>Wird gespeichert...</span>`;
 
+      // In Firebase Cloud Firestore eintragen
       try {
         if (window.db && window.addDoc) {
           const orderDoc = {
@@ -1389,7 +1440,7 @@
               einzelpreis: i.singlePrice,
               gesamt: i.totalPrice
             })),
-            erstelltAm: new Date().toISOString(),
+            erstelltAm: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString(),
             status: "offen",
             bezahlt: false,
             archiviert: false,
@@ -1397,6 +1448,9 @@
           };
           
           await window.addDoc(window.collection(window.db, window.ORDERS_COL), orderDoc);
+          console.log("Erfolgreich in Firestore gespeichert!");
+        } else {
+          console.warn("Firestore noch nicht initialisiert, Offline-Modus.");
         }
       } catch (err) {
         console.error("Fehler beim Firestore-Speichern:", err);
@@ -1406,12 +1460,14 @@
         submitBtn.innerHTML = `<i data-lucide="check-circle" class="w-5 h-5"></i><span>Verbindlich bestellen & zahlen</span>`;
       }
 
+      // Dialog wechseln zur Zahlungsseite
       toggleCartModal(false);
 
       const paymentModal = document.getElementById("paymentModal");
       document.getElementById("paymentModalSubtitle").textContent = `Bestellung für ${currentUser} erfolgreich gebucht!`;
       document.getElementById("paymentModalAmount").textContent = formatEuro(total);
       
+      // PayPal.Me Deep-Link
       const paypalMeUrl = `https://paypal.me/${PAYPAL_ME_NAME}/${totalFormatted}EUR`;
       document.getElementById("payPalDeepLink").href = paypalMeUrl;
 
@@ -1444,7 +1500,9 @@
       }
     }
 
+    // --- ADMIN MODAL & AUSWERTUNG (PIN-GESCHÜTZT) ---
     async function openAdminModal() {
+      // Immer PIN 9600 abfragen, unabhängig vom eingetragenen Namen
       if (!sessionStorage.getItem("fisch_admin_authenticated")) {
         const enteredPin = prompt("Admin-PIN eingeben:");
         if (enteredPin !== ADMIN_PIN) {
@@ -1464,6 +1522,9 @@
     function closeAdminModal() {
       document.getElementById("adminModal").classList.add("hidden");
     }
+
+    let archivedOrders = [];
+    let isAdminHeaderCollapsed = false;
 
     function setAdminHeaderCollapsed(collapsed) {
       isAdminHeaderCollapsed = collapsed;
@@ -1501,6 +1562,7 @@
       if (usersBtn) usersBtn.className = (tab === "users") ? activeClass : inactiveClass;
       if (histBtn) histBtn.className = (tab === "history") ? activeClass : inactiveClass;
 
+      // Automatisch einklappen bei "Besteller", ausklappen bei "Einkaufsliste"
       if (tab === "users") {
         setAdminHeaderCollapsed(true);
       } else if (tab === "agg") {
@@ -1519,9 +1581,7 @@
       if (!window.db || !window.getDocs) return;
       
       const content = document.getElementById("adminTabContent");
-      if (!liveOrders.length && !archivedOrders.length) {
-        content.innerHTML = `<p class="text-center text-slate-400 py-6">Lade Bestellungen aus Firebase...</p>`;
-      }
+      content.innerHTML = `<p class="text-center text-slate-400 py-6">Lade Bestellungen aus Firebase...</p>`;
 
       try {
         const snap = await window.getDocs(window.collection(window.db, window.ORDERS_COL));
@@ -1578,11 +1638,11 @@
       }
     }
 
-    function renderAdminContent() {
+        function renderAdminContent() {
       const content = document.getElementById("adminTabContent");
       if (!content) return;
 
-      // 1. ARCHIV-TAB:
+      // 1. ARCHIV-TAB: Völlig unabhängig von aktiven Bestellungen prüfen & rendern
       if (currentAdminTab === "history") {
         if (!archivedOrders || archivedOrders.length === 0) {
           content.innerHTML = `
@@ -1600,16 +1660,20 @@
         archivedOrders.forEach(o => {
           let tKey = "";
 
-          // Exakte historische Freitag-Berechnung anhand des Buchungszeitpunkts:
-          const orderDateStr = o.erstelltAm || o.archiviertAm;
-          if (orderDateStr) {
-            const calculatedFriday = getAssociatedFriday(orderDateStr);
-            if (calculatedFriday) {
-              tKey = calculatedFriday;
+          // 1. Aus echtem Erstelldatum oder Archivierungsdatum den passenden Freitag berechnen
+          const dateObj = parseAnyDate(o.erstelltAm) || parseAnyDate(o.archiviertAm);
+          if (dateObj) {
+            tKey = getAssociatedFriday(dateObj);
+          }
+
+          // 2. Sicherheits-Override: Wurde die Bestellung vor dem 28.09.2026 erfasst,
+          // gehört sie garantiert zum vergangenen Freitag (25.09.2026), selbst wenn in Firebase fälschlicherweise 02.10. gestempelt war!
+          if (!tKey || tKey.includes("02.10.2026") || (o.terminDatum && o.terminDatum.includes("02.10.2026"))) {
+            if (!dateObj || dateObj < new Date("2026-09-28T00:00:00")) {
+              tKey = "Freitag, 25.09.2026";
             }
           }
 
-          // Fallback, falls kein Buchungsdatum vorliegt
           if (!tKey) {
             tKey = o.terminDatum || "Vergangener Termin";
           }
@@ -1698,13 +1762,13 @@
               const item = dishesMap[dName];
               const varKeys = Object.keys(item.variants);
               const variantText = varKeys.length > 0 
-                ? varKeys.map(vk => `${item.variants[vk]}x${vk}`).join(", ") 
+                ? varKeys.map(vk => `${item.variants[vk]}x ${vk}`).join(", ") 
                 : "Standard";
 
               return `
                 <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
                   <div>
-                    <span class="font-extrabold text-slate-900 text-sm">${item.total}x${dName}</span>
+                    <span class="font-extrabold text-slate-900 text-sm">${item.total}x ${dName}</span>
                     <p class="text-[11px] text-slate-500 font-medium">${variantText}</p>
                   </div>
                   <span class="font-black text-slate-800">${formatEuro(item.summe)}</span>
@@ -1727,7 +1791,7 @@
                     </div>
 
                     <div class="flex items-center space-x-1.5">
-                      <button type="button" onclick="togglePaymentStatus('${o.id}',${!isPaid})" 
+                      <button type="button" onclick="togglePaymentStatus('${o.id}', ${!isPaid})" 
                         class="px-2.5 py-1 rounded-xl text-xs font-black flex items-center space-x-1.5 transition active:scale-95 ${
                           isPaid 
                             ? 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700' 
@@ -1737,7 +1801,7 @@
                         <span>${isPaid ? 'Bezahlt ✓' : 'Offen'}</span>
                       </button>
 
-                      <button type="button" onclick="deleteSingleOrder('${o.id}', '${o.besteller.replace(/'/g, "\\'")}', '${formatEuro(o.gesamtpreis || 0)}')" 
+                      <button type="button" onclick="deleteSingleOrder('${o.id}', '${o.besteller.replace(/'/g, "\'")}', '${formatEuro(o.gesamtpreis || 0)}')" 
                         class="p-1.5 rounded-xl text-red-500 hover:bg-red-100 hover:text-red-700 transition active:scale-90" title="Diese Bestellung löschen">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                       </button>
@@ -1768,31 +1832,36 @@
       if (!window.db || !window.updateDoc || !window.doc) return;
 
       try {
+        // Lokalen State sofort anpassen für flüssige UI
         const ord = liveOrders.find(o => o.id === orderId);
         if (ord) ord.bezahlt = newStatus;
 
         calculateAdminStats();
         renderAdminContent();
 
+        // In Firestore speichern
         const docRef = window.doc(window.db, window.ORDERS_COL, orderId);
         await window.updateDoc(docRef, {
           bezahlt: newStatus,
-          bezahltAktualisiertAm: new Date().toISOString()
+          bezahltAktualisiertAm: window.serverTimestamp ? window.serverTimestamp() : new Date().toISOString()
         });
       } catch (err) {
         console.error("Fehler beim Aktualisieren des Bezahlstatus:", err);
         alert("Konnte Bezahlstatus nicht speichern: " + err.message);
         await refreshLiveOrders();
-        await updateAdminPushCount();
+      await updateAdminPushCount();
       }
     }
 
+    // --- WHATSAPP EXPORT FÜR DEN FISCHMANN (GRUPPIERT NACH SPEISE) ---
     function sendWhatsAppToVendor() {
       if (liveOrders.length === 0) {
         alert("Keine Bestellungen zur Übertragung vorhanden.");
         return;
       }
 
+      // Gruppierung nach Hauptspeise, darunter nach Varianten
+      // dishesMap: { "Saftlachsbrötchen": { total: 6, variants: { "Honig-Senf | mit Salat": 3, "Remo | mit Salat": 3 } } }
       const dishesMap = {};
       let totalPieces = 0;
       let grandTotal = 0;
@@ -1822,6 +1891,7 @@
       let text = `🐟 *Fridays for Fischbrötchen - Bestellung* 🐟\n\n`;
       text += `Moin! Hier ist unsere Gesamtbestellung für *${dateHeading}*:\n\n`;
 
+      // Alphabetisch sortiert ausgeben (Varianten untereinander)
       Object.keys(dishesMap).sort().forEach(dishName => {
         const item = dishesMap[dishName];
         const varKeys = Object.keys(item.variants).sort();
@@ -1842,6 +1912,8 @@
       window.open(waUrl, "_blank");
     }
 
+    
+    // --- EINZELNE BESTELLUNG LÖSCHEN (DURCH ADMIN) ---
     async function deleteSingleOrder(orderId, bestellerName, betragStr) {
       const ok = confirm(`Möchtest du diese Bestellung von "${bestellerName}" (${betragStr}) wirklich unwiderruflich löschen?`);
       if (!ok) return;
@@ -1851,6 +1923,7 @@
       try {
         await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, orderId));
         
+        // Aus lokalem Cache entfernen
         liveOrders = liveOrders.filter(o => o.id !== orderId);
         
         calculateAdminStats();
@@ -1863,6 +1936,8 @@
       }
     }
 
+    
+    // --- ARCHIVIERUNG DER AKTUELLEN WOCHE (STATT HARTEM LÖSCHEN) ---
     async function archiveCurrentOrders() {
       if (liveOrders.length === 0) {
         alert("Es liegen aktuell keine offenen Bestellungen der Woche vor.");
@@ -1875,12 +1950,13 @@
       if (!window.db || !window.updateDoc || !window.doc) return;
 
       try {
-        const nowIso = new Date().toISOString();
+        const now = new Date();
+        const nowIso = now.toISOString();
 
         for (const ord of liveOrders) {
-          // Rechnet anhand des Buchungszeitpunkts den passenden Freitag aus
-          const relevantDate = ord.erstelltAm || nowIso;
-          const calculatedFriday = getAssociatedFriday(relevantDate) || (nextEventDateFormatted || "Freitag");
+          // Exakt den zugehörigen Freitag der Bestellung ermitteln
+          const createdDate = parseAnyDate(ord.erstelltAm) || now;
+          const calculatedFriday = getAssociatedFriday(createdDate) || "Freitag";
 
           const docRef = window.doc(window.db, window.ORDERS_COL, ord.id);
           await window.updateDoc(docRef, {
@@ -1890,13 +1966,39 @@
           });
         }
 
-        alert("Bestellungen wurden erfolgreich ins Archiv verschoben!");
+        alert("Bestellungen wurden erfolgreich ins Archiv verschoben! Die App ist bereit für die nächste Woche.");
         await refreshLiveOrders();
-        await updateAdminPushCount();
+      await updateAdminPushCount();
         checkAndLoadUserOrder();
       } catch (err) {
         console.error("Fehler beim Archivieren:", err);
         alert("Fehler beim Archivieren: " + err.message);
+      }
+    }
+
+    // --- ALTE RESET FUNKTION ERSETZT ---
+    async function confirmResetAllOrders() {
+      const sicher = confirm("Möchtest du wirklich ALLE Bestellungen aus der Cloud löschen (z. B. nach dem Freitags-Essen)?");
+      if (!sicher) return;
+
+      const code = prompt("Tippe 'LEEREN' zur Bestätigung:");
+      if (code !== "LEEREN") {
+        alert("Abgebrochen.");
+        return;
+      }
+
+      if (!window.db || !window.deleteDoc || !window.doc) return;
+
+      try {
+        for (const ord of liveOrders) {
+          await window.deleteDoc(window.doc(window.db, window.ORDERS_COL, ord.id));
+        }
+        alert("Alle Bestellungen in der Cloud wurden erfolgreich zurückgesetzt!");
+        await refreshLiveOrders();
+      await updateAdminPushCount();
+      } catch (err) {
+        console.error("Fehler beim Löschen:", err);
+        alert("Fehler beim Löschen der Datensätze.");
       }
     }
 
