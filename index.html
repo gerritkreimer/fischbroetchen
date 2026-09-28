@@ -1612,16 +1612,86 @@
       }
     }
 
-    function renderAdminContent() {
+        function renderAdminContent() {
       const content = document.getElementById("adminTabContent");
-      
+      if (!content) return;
+
+      // 1. ARCHIV-TAB: Völlig unabhängig von aktiven Bestellungen prüfen & rendern
+      if (currentAdminTab === "history") {
+        if (!archivedOrders || archivedOrders.length === 0) {
+          content.innerHTML = `
+            <div class="text-center py-8 text-slate-400 space-y-2">
+              <i data-lucide="archive" class="w-10 h-10 mx-auto opacity-30"></i>
+              <p class="font-semibold text-xs">Das Archiv ist aktuell noch leer.</p>
+              <p class="text-[11px] text-slate-400">Bestellungen wandern hierhin, sobald du am Freitag "Woche abschließen" klickst.</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        const byTermin = {};
+        archivedOrders.forEach(o => {
+          let tKey = o.terminDatum;
+          if (!tKey && o.archiviertAm) {
+            tKey = "Archiviert am " + new Date(o.archiviertAm).toLocaleDateString('de-DE');
+          } else if (!tKey) {
+            tKey = "Frühere Bestellungen";
+          }
+          if (!byTermin[tKey]) byTermin[tKey] = [];
+          byTermin[tKey].push(o);
+        });
+
+        const sortedTermine = Object.keys(byTermin).reverse();
+
+        content.innerHTML = `
+          <div class="space-y-4">
+            ${sortedTermine.map(tName => {
+              const termOrders = byTermin[tName];
+              const tCount = termOrders.length;
+              const tSum = termOrders.reduce((s, o) => s + (Number(o.gesamtpreis) || 0), 0);
+
+              return `
+                <div class="bg-slate-100/90 border border-slate-200 rounded-2xl p-3 text-xs">
+                  <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                    <div>
+                      <span class="font-black text-slate-900 text-sm flex items-center space-x-1">
+                        <i data-lucide="calendar-check" class="w-3.5 h-3.5 text-blue-700"></i>
+                        <span>${tName}</span>
+                      </span>
+                      <p class="text-[10px] text-slate-500 font-semibold">${tCount} Besteller • Umsatz: ${formatEuro(tSum)}</p>
+                    </div>
+                  </div>
+
+                  <div class="mt-2 space-y-1.5">
+                    ${termOrders.map(o => `
+                      <div class="p-2 bg-white rounded-xl border border-slate-200/80">
+                        <div class="flex justify-between items-center">
+                          <span class="font-bold text-slate-900">${o.besteller}</span>
+                          <span class="font-black text-blue-950">${formatEuro(o.gesamtpreis || 0)}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-0.5">
+                          ${(o.artikel || []).map(a => `${a.menge}x ${a.speise} (${a.details || 'Standard'})`).join(', ')}
+                        </p>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      // 2. AKTIVE BESTELLUNGEN (Einkaufsliste / Besteller):
       if (liveOrders.length === 0) {
-        content.innerHTML = `<p class="text-center text-slate-400 py-8">Bislang noch keine Bestellungen in der Cloud vorhanden.</p>`;
+        content.innerHTML = `<p class="text-center text-slate-400 py-8">Aktuell keine offenen Bestellungen in der Cloud vorhanden.</p>`;
         return;
       }
 
       if (currentAdminTab === "agg") {
-        // Aggregation nach Speise mit Varianten
         const dishesMap = {};
         liveOrders.forEach(o => {
           (o.artikel || []).forEach(a => {
@@ -1668,7 +1738,6 @@
           </div>
         `;
       } else if (currentAdminTab === "users") {
-        // Auflistung nach Besteller mit Abhaken der Zahlung
         content.innerHTML = `
           <div class="space-y-2.5">
             ${liveOrders.map(o => {
@@ -1682,7 +1751,6 @@
                     </div>
 
                     <div class="flex items-center space-x-1.5">
-                      <!-- Bezahl-Häkchen Button -->
                       <button type="button" onclick="togglePaymentStatus('${o.id}', ${!isPaid})" 
                         class="px-2.5 py-1 rounded-xl text-xs font-black flex items-center space-x-1.5 transition active:scale-95 ${
                           isPaid 
@@ -1693,8 +1761,7 @@
                         <span>${isPaid ? 'Bezahlt ✓' : 'Offen'}</span>
                       </button>
 
-                      <!-- Einzelne Bestellung löschen (z.B. Test- / Falschbestellung) -->
-                      <button type="button" onclick="deleteSingleOrder('${o.id}', '${o.besteller.replace(/'/g, "\\'")}', '${formatEuro(o.gesamtpreis || 0)}')" 
+                      <button type="button" onclick="deleteSingleOrder('${o.id}', '${o.besteller.replace(/'/g, "\'")}', '${formatEuro(o.gesamtpreis || 0)}')" 
                         class="p-1.5 rounded-xl text-red-500 hover:bg-red-100 hover:text-red-700 transition active:scale-90" title="Diese Bestellung löschen">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                       </button>
@@ -1718,73 +1785,9 @@
           </div>
         `;
         lucide.createIcons();
-            } else if (currentAdminTab === "history") {
-        // HISTORIE / ARCHIV TAB
-        if (archivedOrders.length === 0) {
-          content.innerHTML = `
-            <div class="text-center py-8 text-slate-400 space-y-2">
-              <i data-lucide="archive" class="w-10 h-10 mx-auto opacity-30"></i>
-              <p class="font-semibold text-xs">Das Archiv ist aktuell noch leer.</p>
-              <p class="text-[11px] text-slate-400">Bestellungen wandern hierhin, sobald du am Freitag "Woche abschließen" klickst.</p>
-            </div>
-          `;
-          lucide.createIcons();
-          return;
-        }
-
-        // Gruppierung nach TerminDatum
-        const byTermin = {};
-        archivedOrders.forEach(o => {
-          const tKey = o.terminDatum || (o.erstelltAm ? new Date(o.erstelltAm).toLocaleDateString('de-DE') : "Vergangener Termin");
-          if (!byTermin[tKey]) byTermin[tKey] = [];
-          byTermin[tKey].push(o);
-        });
-
-        const sortedTermine = Object.keys(byTermin).reverse();
-
-        content.innerHTML = `
-          <div class="space-y-4">
-            ${sortedTermine.map((tName, idx) => {
-              const termOrders = byTermin[tName];
-              const tCount = termOrders.length;
-              const tSum = termOrders.reduce((s, o) => s + (Number(o.gesamtpreis) || 0), 0);
-
-              return `
-                <div class="bg-slate-100/90 border border-slate-200 rounded-2xl p-3 text-xs">
-                  <div class="flex justify-between items-center pb-2 border-b border-slate-200">
-                    <div>
-                      <span class="font-black text-slate-900 text-sm flex items-center space-x-1">
-                        <i data-lucide="calendar-check" class="w-3.5 h-3.5 text-blue-700"></i>
-                        <span>${tName}</span>
-                      </span>
-                      <p class="text-[10px] text-slate-500 font-semibold">${tCount} Besteller • Umsatz: ${formatEuro(tSum)}</p>
-                    </div>
-                  </div>
-
-                  <div class="mt-2 space-y-1.5">
-                    ${termOrders.map(o => `
-                      <div class="p-2 bg-white rounded-xl border border-slate-200/80">
-                        <div class="flex justify-between items-center">
-                          <span class="font-bold text-slate-900">${o.besteller}</span>
-                          <span class="font-black text-blue-950">${formatEuro(o.gesamtpreis || 0)}</span>
-                        </div>
-                        <p class="text-[10px] text-slate-500 mt-0.5">
-                          ${(o.artikel || []).map(a => `${a.menge}x ${a.speise} (${a.details || 'Standard'})`).join(', ')}
-                        </p>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-        `;
-        lucide.createIcons();
       }
     }
 
-
-    // --- BEZAHLSTATUS TOGGLE DURCH ADMIN ---
     async function togglePaymentStatus(orderId, newStatus) {
       if (!window.db || !window.updateDoc || !window.doc) return;
 
