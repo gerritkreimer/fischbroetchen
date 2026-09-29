@@ -1450,18 +1450,20 @@
           await window.addDoc(window.collection(window.db, window.ORDERS_COL), orderDoc);
           console.log("Erfolgreich in Firestore gespeichert!");
 
-          // Sofortiger Push-Ping an Admin-Smartphone via ntfy (100% kostenlos)
+          // Sofortiger Push-Ping an Admin-Smartphone via ntfy (100% kostenlos via JSON)
           try {
             const itemsSummary = cart.map(i => `${i.quantity}x ${i.dishName}`).join(", ");
-            fetch("https://ntfy.sh/fischbroetchen-admin-gerrit", {
+            fetch("https://ntfy.sh", {
               method: "POST",
-              headers: {
-                "Title": `🐟 Neue Bestellung: ${currentUser} (${formatEuro(total)})`,
-                "Priority": "high",
-                "Tags": "fish,bell"
-              },
-              body: `${itemsSummary}`
-            }).catch(() => {});
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                topic: "fischbroetchen-admin-gerrit",
+                title: `🐟 Neue Bestellung: ${currentUser} (${formatEuro(total)})`,
+                message: itemsSummary || "Neue Bestellung erfasst",
+                priority: 4,
+                tags: ["fish", "bell"]
+              })
+            }).catch(e => console.warn("ntfy Fehler:", e));
           } catch (ntfyErr) {
             console.warn("ntfy Fehler:", ntfyErr);
           }
