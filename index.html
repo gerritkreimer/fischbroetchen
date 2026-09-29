@@ -1449,6 +1449,22 @@
           
           await window.addDoc(window.collection(window.db, window.ORDERS_COL), orderDoc);
           console.log("Erfolgreich in Firestore gespeichert!");
+
+          // Sofortiger Push-Ping an Admin-Smartphone via ntfy (100% kostenlos)
+          try {
+            const itemsSummary = cart.map(i => `${i.quantity}x ${i.dishName}`).join(", ");
+            fetch("https://ntfy.sh/fischbroetchen-admin-gerrit", {
+              method: "POST",
+              headers: {
+                "Title": `🐟 Neue Bestellung: ${currentUser} (${formatEuro(total)})`,
+                "Priority": "high",
+                "Tags": "fish,bell"
+              },
+              body: `${itemsSummary}`
+            }).catch(() => {});
+          } catch (ntfyErr) {
+            console.warn("ntfy Fehler:", ntfyErr);
+          }
         } else {
           console.warn("Firestore noch nicht initialisiert, Offline-Modus.");
         }
