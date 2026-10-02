@@ -13,34 +13,13 @@ jobs:
       - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Prüfen, ob Termin für morgen aktiv ist
-        id: check_status
-        run: |
-          TOMORROW=$(date -d "+1 day" +%Y-%m-%d)
-          echo "Morgiger Freitag: $TOMORROW"
-
-          FIREBASE_URL="https://firestore.googleapis.com/v1/projects/fischbroetchen-65239/databases/(default)/documents/einstellungen/termin"
-          RESPONSE=$(curl -s "$FIREBASE_URL")
-
-          SAVED_DATE=$(echo "$RESPONSE" | grep -oP '"datum":\s*\{\s*"stringValue":\s*"\K[^"]+')
-          echo "In Firebase gespeicherter Termin: $SAVED_DATE"
-
-          if [ "$SAVED_DATE" = "$TOMORROW" ]; then
-            echo "shop_open=true" >> $GITHUB_OUTPUT
-            echo "Termin ist aktiv. Benachrichtigungen werden vorbereitet."
-          else
-            echo "shop_open=false" >> $GITHUB_OUTPUT
-            echo "Kein Fisch-Freitag für morgen hinterlegt. Vorgang wird übersprungen."
-          fi
-
       - name: Node.js einrichten
-        if: steps.check_status.outputs.shop_open == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Firebase-Admin SDK installieren & Push-Nachrichten senden
-        if: steps.check_status.outputs.shop_open == 'true'
+      - name: Push-Nachrichten prüfen & senden
+        id: push_job
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
@@ -48,7 +27,7 @@ jobs:
           node send_push.js
 
       - name: E-Mail Erinnerung an Gerrit senden
-        if: steps.check_status.outputs.shop_open == 'true'
+        if: steps.push_job.outputs.shop_active == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
